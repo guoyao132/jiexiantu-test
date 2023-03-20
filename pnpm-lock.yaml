@@ -3,8 +3,6 @@ lockfileVersion: 5.4
 specifiers:
   '@types/node': ^18.15.3
   '@vitejs/plugin-vue': ^4.1.0
-  mxgraph: ^4.2.2
-  mxgraph-js: ^1.0.1
   terser: ^5.16.6
   typescript: ^4.9.3
   vite: ^4.2.0
@@ -12,8 +10,6 @@ specifiers:
   vue-tsc: ^1.2.0
 
 dependencies:
-  mxgraph: 4.2.2
-  mxgraph-js: 1.0.1
   vue: 3.2.47
 
 devDependencies:
@@ -520,15 +516,6 @@ packages:
   /muggle-string/0.2.2:
     resolution: {integrity: sha512-YVE1mIJ4VpUMqZObFndk9CJu6DBJR/GB13p3tXuNbwD4XExaI5EOuRl6BHeIDxIqXZVxSfAC+y6U1Z/IxCfKUg==}
     dev: true
-
-  /mxgraph-js/1.0.1:
-    resolution: {integrity: sha512-lezXs3frMgOn9YXAffGQvxQ93IIYp6NRvIj6GSFRaKZcnnbzau8E1Ma/yywWKZ9mL34vilL1oHa20UzD2OLpzA==}
-    dev: false
-
-  /mxgraph/4.2.2:
-    resolution: {integrity: sha512-FrJc5AxzXSqiQNF+8CyJk6VxuKO4UVPgw32FZuFZ3X9W+JqOAQBTokZhh0ZkEqGpEOyp3z778ssmBTvdrTAdqw==}
-    deprecated: Package no longer supported. Use at your own risk
-    dev: false
 
   /nanoid/3.3.4:
     resolution: {integrity: sha512-MqBkQh/OHTS2egovRtLk45wEyNXwF+cokD+1YPf9u5VfJiRdAiRwB2froX5Co9Rh20xs4siNPm8naNotSD6RBw==}

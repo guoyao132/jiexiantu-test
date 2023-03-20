@@ -8,8 +8,6 @@
     "build": "vue-tsc && vite build"
   },
   "dependencies": {
-    "mxgraph": "^4.2.2",
-    "mxgraph-js": "^1.0.1",
     "vue": "^3.2.47"
   },
   "devDependencies": {
