@@ -125,7 +125,7 @@ export default [{
   "ls": 10,
   "isPivotal": "0",
   "es": 8,
-  "parentId": "5,6",
+  "parentId": "5,6                                                                                                                                                                                                                                                                                                                                                                                                                                                                         ",
   "duration": 1,
   "tf": 2,
   "y": 90,

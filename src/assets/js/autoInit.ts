@@ -1,7 +1,7 @@
 import editorui from './graphInit';
 import {watch} from 'vue'
 
-// import data from './data'
+import data from './data'
 
 interface LiuChengLineData {
   toId: number,
@@ -50,6 +50,8 @@ class DisplayUtil {
   rightTopPoint: number[];     //main容器点位位置
   rightBottomPoint: number[];     //main容器点位位置
   biaochiHeight: number;        //标尺高度
+  linePointVertex: any;         //线点位对象
+  dateFormatType: string;       //日期格式
 
   constructor() {
     this.biaochiHeight = 50;
@@ -62,7 +64,7 @@ class DisplayUtil {
     this.fontSize = 25;
     this.strokeWidth = 3;
     this.minDateLen = 100;
-    this.dateMinSub = 2;
+    this.dateMinSub = 1;
     this.dateBase = 50;
     this.colorLevalArr = ['#0080ff', '#ff0000', '#008080'];
     this.editorUi = null;
@@ -80,6 +82,8 @@ class DisplayUtil {
     this.leftBottomPoint = [];
     this.rightTopPoint = [];
     this.rightBottomPoint = [];
+    this.linePointVertex = {};
+    this.dateFormatType = 'y.m.d';
   }
 
   init() {
@@ -91,8 +95,7 @@ class DisplayUtil {
     })
   }
 
-  //绘制
-  drawLiucheng() {
+  getLiuchengData(result: any) {
     // "ff": 0,                     自由时差
     // "ef": 3,                    最早完成
     // "serialNumber": "1",        序号
@@ -109,8 +112,45 @@ class DisplayUtil {
     // "planStartDate": 1678896000000,   计划开始时间
     // "planEndDate": 1679068800000,      计划结束时间
     // "direction": "0"                 箭头方向 0：主轴 1：上轴 2：下轴
+    let dataArr:any = [];
+    console.log(result);
+    result.forEach((v: any) => {
+      let parentIds = v.parentId;
+      let sDate = this.formatTime(v.planStartDate, this.dateFormatType);
+      let eDate = this.formatTime(v.planEndDate, this.dateFormatType);
+      if(parentIds){
+
+      }else{
+      }
+      let sPoint = {
+        id: v.serialNumber,
+        level: 0,
+        date: sDate,
+      };
+      let ePoint = {
+        id: v.serialNumber,
+        level: 0,
+        date: eDate,
+      }
+      dataArr.push(sPoint)
+      dataArr.push(ePoint)
+    })
+    dataArr.sort((v1, v2) => {
+      if (Date.parse(v1.date) > Date.parse(v2.date)) {
+        return 1;
+      } else {
+        return -1;
+      }
+    })
+    console.log(dataArr);
 
 
+    return result;
+  }
+
+  //绘制
+  drawLiucheng() {
+    let d = this.getLiuchengData(data)
     this.liuchengData = [
       {
         id: 1,
@@ -745,7 +785,10 @@ class DisplayUtil {
     let lines = [];
     this.liuchengData.forEach(v => {
       let needNum = this.needAddSubDateNum(v.date);
-      let x = (this.dateSubLength) * ((v.len || 0)  / this.dateMinSub + needNum);
+      let x = this.getDateXLen(v.date);
+      if(v.id !== 1){
+        x = x - this.pointSize / 2;
+      }
       let strokeColor = this.colorLevalArr[0];
       if (v.level === 1) {
         strokeColor = this.colorLevalArr[1];
@@ -855,9 +898,7 @@ class DisplayUtil {
         let type3Line: any = [];
         let bolangxian: any = null;
         let bolangxianArrow = false;
-        let len: number = this.getDateDaySub(val.date, this.startDate);
-        let needNum = this.needAddSubDateNum(val.date);
-        let x = (this.dateSubLength) * (len  / this.dateMinSub + needNum);
+        let x = this.getDateXLen(val.date);
         let yS = y1 + (entryY * this.pointSize);
         let yE = y2 + (entryY * this.pointSize);
         let pointS = [x1 + (exitX * this.pointSize), yS];
@@ -926,7 +967,8 @@ class DisplayUtil {
         type3Line.forEach((v: any) => {
           vertexs.push([])
           v.forEach((val: any) => {
-            vertexs[vertexs.length - 1].push(this.graph.insertVertex(this.parentCell, null, null, val[0], val[1], 0, 0))
+            vertexs[vertexs.length - 1].push(this.createPointVertex(val[0], val[1]))
+
           })
         })
         vertexs.forEach((vertex: any, i1: number) => {
@@ -943,22 +985,23 @@ class DisplayUtil {
         })
         if (bolangxian) {
           this.graph.insertVertex(this.parentCell, null, val.lineLen, bolangxian[0][0], bolangxian[0][1], 0, 0, `text;html=1;align=center;verticalAlign=bottom;fontSize=${this.fontSize};spacing=20;`);
-          let bx1 = bolangxian[0][0];
-          let bx2 = bolangxian[1][0];
+          let bx1 = bolangxian[0][0] + 50;
+          let bx2 = bolangxian[1][0] - 50;
           let styleStr =
             `strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};curved=1;`;
 
-          let bVertexS = this.graph.insertVertex(this.parentCell, null, null, bolangxian[0][0], bolangxian[0][1], 0, 0);
-          let bVertexE = this.graph.insertVertex(this.parentCell, null, null, bolangxian[1][0], bolangxian[0][1], 0, 0);
+          let bVertexS = this.createPointVertex(bolangxian[0][0], bolangxian[0][1]);
+          let bVertexE = this.createPointVertex(bolangxian[1][0], bolangxian[0][1]);
           if (bolangxianArrow) {
             styleStr += 'endArrow=block;';
           } else {
             styleStr += 'endArrow=none;';
           }
-          let e1 = this.graph.insertEdge(this.parentCell, '111111', '', bVertexS, bVertexE, styleStr)
+          let e1 = this.graph.insertEdge(this.parentCell, '', '', bVertexS, bVertexE, styleStr)
           let points = [];
           let index = 0;
           let lastPoint = null;
+          points.push(new window.mxPoint(bolangxian[0][0], bolangxian[0][1]))
           if (bx2 - bx1 < this.bolangxianSubLength * 20) {
             points.push(new window.mxPoint(bx1, bolangxian[0][1]))
 
@@ -971,7 +1014,7 @@ class DisplayUtil {
               index++;
               points.push(new window.mxPoint(x, y));
             }
-            lastPoint = points.pop();
+            // lastPoint = points.pop();
           } else {
             points.push(new window.mxPoint(bx1 + this.bolangxianSubLength * 2, bolangxian[0][1]))
             for (let i = bx1 + this.bolangxianSubLength * 3; i < bx2; i = i + this.bolangxianSubLength) {
@@ -983,12 +1026,12 @@ class DisplayUtil {
               index++;
               points.push(new window.mxPoint(x, y));
             }
-            points.pop();
-            points.pop();
-            points.pop();
-            lastPoint = points.pop();
+            // points.pop();
+            // points.pop();
+            // points.pop();
+            // lastPoint = points.pop();
           }
-          points.push(new window.mxPoint(lastPoint.x, bolangxian[0][1]))
+          points.push(new window.mxPoint(bolangxian[1][0], bolangxian[0][1]))
           e1.geometry.points = points;
         }
       }
@@ -999,6 +1042,7 @@ class DisplayUtil {
   addAllEdge() {
     this.addMainEdge();
     this.addBiaochiTitle();
+    this.addBottomCon();
   }
 
   // 添加主边框
@@ -1011,7 +1055,7 @@ class DisplayUtil {
     let minX = -this.mainPadding;
     let allLen = this.getDateDaySub(this.startDate, this.endDate)
     let needNum = this.needAddSubDateNum(this.endDate);
-    let maxX = (this.dateSubLength) * (allLen / this.dateMinSub + needNum) + this.mainPadding + this.pointSize;
+    let maxX = (this.dateSubLength) * (allLen / this.dateMinSub + needNum + 2) + this.mainPadding + this.pointSize;
     this.leftTopPoint = [minX, minY];
     this.leftBottomPoint = [minX, maxY];
     this.rightTopPoint = [maxX, minY];
@@ -1038,54 +1082,206 @@ class DisplayUtil {
     this.addLineEdge([minX, minY - this.biaochiHeight * 2], [maxX, minY - this.biaochiHeight * 2]);
     this.addLineEdge([minX, minY - this.biaochiHeight * 3], [maxX, minY - this.biaochiHeight * 3]);
     this.addLineEdge([maxX, minY], [maxX, minY - this.biaochiHeight * 3]);
-
-
+    let endDate: Date | string = new Date(this.endDate);
+    endDate.setDate(endDate.getDate() + this.dateMinSub * 3)
+    endDate = this.formatTime(endDate, this.dateFormatType);
     //绘制工程标尺
-    let allLen = this.getDateDaySub(this.startDate, this.endDate)
+    let allLen = this.getDateDaySub(this.startDate, endDate)
     // dateMinSub
     let biaochiNum = Math.ceil(allLen / this.dateMinSub) + 1;
     let biaochiLabelStyle = `ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
+    let prevX = minX + this.mainPadding;
+    let prevD = this.formatTime(Date.parse(this.startDate), this.dateFormatType).split('.')[2];
     for (let i = 1; i < biaochiNum; i++) {
       let biaoChiLen = 7;
       let d = Date.parse(this.startDate) + i * this.dateMinSub * 24 * 60 * 60 * 1000;
       // * this.dateAddSub
-      let dStr = this.formatTime(d, 'ymd');
+      let dStr = this.formatTime(d, this.dateFormatType);
       let needNum = this.needAddSubDateNum(dStr);
-      let x = (this.dateSubLength) * (i + needNum) + this.pointSize;
-      if(i % (10 / this.dateMinSub) === 0){
-        biaoChiLen = 12;
-        this.graph.insertVertex(this.parentCell, null, i * this.dateMinSub, x, minY - this.biaochiHeight * 3 + this.biaochiHeight / 2, 0, 0, biaochiLabelStyle);
+      let x = (this.dateSubLength) * (i + needNum);
+      let day = dStr.split('.')[2];
+      if (x < maxX) {
+        if (i % (10 / this.dateMinSub) === 0) {
+          biaoChiLen = 12;
+          this.graph.insertVertex(this.parentCell, null, i * this.dateMinSub, x, minY - this.biaochiHeight * 3 + this.biaochiHeight / 2, 0, 0, biaochiLabelStyle);
+        }
+        this.addLineEdge([x, minY - this.biaochiHeight * 3], [x, minY - this.biaochiHeight * 3 + biaoChiLen]);
+        this.addLineEdge([x, minY - this.biaochiHeight * 2], [x, minY - this.biaochiHeight * 2 - biaoChiLen]);
+        this.addLineEdge([x, minY], [x, minY - this.biaochiHeight]);
       }
-      this.addLineEdge([x, minY - this.biaochiHeight * 3], [x, minY - this.biaochiHeight * 3 + biaoChiLen]);
-      this.addLineEdge([x, minY - this.biaochiHeight * 2], [x, minY - this.biaochiHeight * 2 - biaoChiLen]);
+      if ((x - (x - prevX) / 2) < maxX) {
+        this.graph.insertVertex(this.parentCell, null, prevD, x - (x - prevX) / 2, minY - this.biaochiHeight + this.biaochiHeight / 2, 0, 0, biaochiLabelStyle);
+      }
+      prevX = x;
+      prevD = day;
     }
     //绘制年月标尺
     let monthArr = [];
-    for(let i = new Date(this.startDate); i <= new Date(this.endDate);){
+    for (let i = new Date(this.startDate); i <= new Date(endDate);) {
       let biaoChiLen = 7;
       let m = i.getMonth() + 1;
       i.setMonth(m);
       i.setDate(1);
-      let dStr = this.formatTime(i, 'ymd');
-      monthArr.push(dStr);
-      let needNum = this.needAddSubDateNum(dStr);
-      let len = this.getDateDaySub(this.startDate, dStr)
-      let x = (this.dateSubLength) * ((len / this.dateMinSub) + needNum);
-      this.addLineEdge([x, minY - this.biaochiHeight * 2], [x, minY - this.biaochiHeight]);
+      if (i < new Date(endDate)) {
+        let dStr = this.formatTime(i, this.dateFormatType);
+        monthArr.push(dStr);
+        let x = this.getDateXLen(dStr);
+        if (x < maxX)
+          this.addLineEdge([x, minY - this.biaochiHeight * 2], [x, minY - this.biaochiHeight]);
+      }
     }
-    console.log(monthArr);
-    for(let i = 1; i < monthArr.length; i++){
+    for (let i = 1; i < monthArr.length; i++) {
       let val = monthArr[i];
-      console.log(this.endDate);
+      let s = monthArr[i - 1];
+      let arr = [[s, val]];
+      if (i === monthArr.length - 1) {
+        let timeVal = Date.parse(val + ' 00:00:00');
+        let timeEnd = Date.parse(endDate);
+        if (Math.abs(timeVal - timeEnd) >= 2.5 * this.dateMinSub * 24 * 60 * 60 * 1000) {
+          if (timeVal > timeEnd) {
+            arr.push([endDate, val])
+          } else {
+            arr.push([val, endDate])
+          }
+        }
+      }
+      arr.forEach((v: string[]) => {
+        let len = this.getDateDaySub(v[0], v[1])
+        let d = new Date(v[0]);
+        d.setDate(d.getDate() + len / 2);
+        let dStr = this.formatTime(d, this.dateFormatType);
+        let x = this.getDateXLen(dStr);
+        let value = this.formatTime(d, 'y.m');
+        if (x < maxX)
+          this.graph.insertVertex(this.parentCell, null, value, x, minY - this.biaochiHeight * 2 + this.biaochiHeight / 2, 0, 0, biaochiLabelStyle);
+      })
     }
   }
 
-  addLineEdge(startPoint: number[], endPoint: number[], text?:string = '') {
-    let styleStr =
+  addBottomCon() {
+    let minX = this.leftTopPoint[0];
+    let maxX = this.rightBottomPoint[0];
+    let minY = this.leftTopPoint[1];
+    let maxY = this.rightBottomPoint[1];
+    let styleStr = `ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
+    let bottomHei = 200;
+
+    this.addLineEdge([minX, maxY], [minX, maxY + bottomHei]); //左竖线
+    this.addLineEdge([maxX, maxY], [maxX, maxY + bottomHei]); //右竖线
+    this.addLineEdge([minX, maxY + bottomHei], [maxX, maxY + bottomHei]); //下横线
+    let jiangeNum = 10;
+    let jiange = 200;
+    let bottomTitle = [
+      ['校对人', '审核人'],
+      ['制图时间', '校对人'],
+      ['总工期', '负责人'],
+      ['开始时间', '结束时间'],
+      ['监理单位', '设计单位'],
+    ]
+    let allLen = this.getDateDaySub(this.startDate, this.endDate) + 1 + '天';
+    let bottomValue = [
+      [],
+      [this.startDate],
+      [allLen],
+      [this.startDate, this.endDate],
+      [],
+    ]
+    for (let i = 1; i < jiangeNum + 1; i++) {
+      let x = maxX - i * jiange;
+      if (i % 2 !== 0) {
+        x -= 50;
+        let values = bottomValue[Math.floor(i / 2)];
+        values.forEach((v: any, i) => {
+          this.graph.insertVertex(this.parentCell, null, v, x, maxY + bottomHei / 4 + bottomHei / 2 * i, 250, 0, styleStr);
+        })
+      } else {
+        let titles = bottomTitle[i / 2 - 1];
+        titles.forEach((v: any, i: number) => {
+          this.graph.insertVertex(this.parentCell, null, v, x, maxY + bottomHei / 4 + bottomHei / 2 * i, 150, 0, styleStr);
+        })
+      }
+      this.addLineEdge([x, maxY], [x, maxY + bottomHei]); //竖线
+    }
+    this.addLineEdge([maxX - jiangeNum * jiange, maxY + bottomHei / 2], [maxX, maxY + bottomHei / 2]); //下横线
+
+    //   绘制图例
+    let tuliLen = 500;
+    let tuliTitle = [
+      ['非关键性工作', '自由时差'],
+      ['关键工作', '需工作'],
+    ];
+    let tuliStyleStr = `endArrow=block;jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;rounded=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
+    // strokeColor=${strokeColor};
+    let tuliStyle = [
+      [
+        tuliStyleStr + `strokeColor=${this.colorLevalArr[0]};`,
+        `strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${this.colorLevalArr[0]};curved=1;`
+      ],
+      [
+        tuliStyleStr + `strokeColor=${this.colorLevalArr[1]};`,
+        tuliStyleStr + `strokeColor=${this.colorLevalArr[0]};dashed=1;`,
+      ],
+
+    ]
+    let tuliMinx = maxX - jiangeNum * jiange - tuliLen * 2 - 30;
+    let tuliLineLen = 200;
+    this.addLineEdge([tuliMinx, maxY], [tuliMinx, maxY + bottomHei]); //左竖线
+    tuliTitle.forEach((v: any, index: number) => {
+      v.forEach((val: any, i: number) => {
+        let x = maxX - jiangeNum * jiange - (index + 1) * tuliLen;
+        let y = maxY + bottomHei / 4 + bottomHei / 2 * i;
+        this.graph.insertVertex(this.parentCell, null, val, x, y, 200, 0, styleStr + 'align=left;');
+        let lineS = x + 180;
+        const e1 = this.addLineEdge([lineS, y], [lineS + tuliLineLen, y], '', tuliStyle[index][i]);
+        if (index === 0 && i === 1) {
+          let points = [];
+          let lIndex = 0;
+          for (let l = lineS + this.bolangxianSubLength; l < lineS + tuliLineLen; l = l + this.bolangxianSubLength) {
+            let lx = l + this.bolangxianSubLength;
+            if (lIndex === 0) {
+              lx = l + this.bolangxianSubLength;
+            }
+            let ly = y + this.bolangxianSubLength / 2 * (lIndex % 2 === 0 ? -1 : 1);
+            lIndex++;
+            points.push(new window.mxPoint(lx, ly));
+          }
+          points.pop()
+          let lastPoint = points.pop();
+          points.push(new window.mxPoint(lastPoint.x, y))
+          e1.geometry.points = points;
+        }
+      })
+    })
+  }
+
+  getDateXLen(d: string, sD?: string) {
+    let needNum = this.needAddSubDateNum(d);
+    sD = sD || this.startDate;
+    let len = this.getDateDaySub(this.startDate, d)
+    let x = (this.dateSubLength) * ((len / this.dateMinSub) + needNum);
+    return x;
+  }
+
+  addLineEdge(startPoint: number[], endPoint: number[], text?: string = '', styleStr?: string) {
+    styleStr = styleStr ||
       `strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=#000000;rounded=0;endArrow=none;`;
-    let sV = this.graph.insertVertex(this.parentCell, null, null, startPoint[0], startPoint[1], 0, 0);
-    let eV = this.graph.insertVertex(this.parentCell, null, null, endPoint[0], endPoint[1], 0, 0);
-    this.graph.insertEdge(this.parentCell, null, text, sV, eV, styleStr);
+    let sKey = `point${startPoint[0]}-${startPoint[1]}`;
+    let eKey = `point${endPoint[0]}-${endPoint[1]}`;
+    let sV = this.createPointVertex(startPoint[0], startPoint[1]);
+    let eV = this.createPointVertex(endPoint[0], endPoint[1]);
+    return this.graph.insertEdge(this.parentCell, null, text, sV, eV, styleStr);
+  }
+
+  createPointVertex(x: number, y: number) {
+    let point = null
+    let sKey = `point${x}-${y}`;
+    if (this.linePointVertex[sKey]) {
+      point = this.linePointVertex[sKey];
+    } else {
+      point = this.graph.insertVertex(this.parentCell, null, null, x, y, 0, 0);
+      this.linePointVertex[sKey] = point;
+    }
+    return point;
   }
 
   //计算当前日期前有多少需要增加长度的日期
@@ -1119,7 +1315,7 @@ class DisplayUtil {
   }
 
 
-  formatTime(time:any, type?:string) {
+  formatTime(time: any, type?: string) {
     let date = new Date(time);
     let dataStr = "";
     let y = date.getFullYear().toString(),
