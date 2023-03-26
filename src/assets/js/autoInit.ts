@@ -52,6 +52,7 @@ class DisplayUtil {
   biaochiHeight: number;        //标尺高度
   linePointVertex: any;         //线点位对象
   dateFormatType: string;       //日期格式
+  resultDate: any;       //接口请求数据
 
   constructor() {
     this.biaochiHeight = 50;
@@ -84,6 +85,7 @@ class DisplayUtil {
     this.rightBottomPoint = [];
     this.linePointVertex = {};
     this.dateFormatType = 'y.m.d';
+    this.resultDate = [];
   }
 
   init() {
@@ -91,435 +93,689 @@ class DisplayUtil {
       this.editorUi = v;
       this.graph = this.editorUi.editor.graph;
       this.parentCell = this.graph.getDefaultParent();
+      this.resultDate = data;
       this.drawLiucheng();
     })
   }
 
   getLiuchengData(result: any) {
-    // "ff": 0,                     自由时差
-    // "ef": 3,                    最早完成
-    // "serialNumber": "1",        序号
-    // "runType": "2",
-    // "ls": 0,                      最迟开始
-    // "isPivotal": "1",              是否关键节点（0 否 1是）
-    // "es": 0,                       最早开始
-    // "parentId": "",                 前置节点ID
-    // "duration": 3,                   工期
-    // "tf": 0,                       总时差
-    // "y": 0,                        Y轴定位
-    // "lf": 3,                       最迟完成
-    // "taskName": "吊顶",               节点名称
-    // "planStartDate": 1678896000000,   计划开始时间
-    // "planEndDate": 1679068800000,      计划结束时间
-    // "direction": "0"                 箭头方向 0：主轴 1：上轴 2：下轴
     let dataArr:any = [];
-    console.log(result);
+    let lineArr:any = [];
     result.forEach((v: any) => {
-      let parentIds = v.parentId;
+      let parentIdsArr = v.parentId ? v.parentId.replace('，', ',').split(',') : [];
       let sDate = this.formatTime(v.planStartDate, this.dateFormatType);
-      let eDate = this.formatTime(v.planEndDate, this.dateFormatType);
-      if(parentIds){
-
+      let eDate = this.formatTime(v.planEndDate + 24 * 60 *60 * 1000, this.dateFormatType);
+      let ff = v.ff;
+      let ffDate = '';
+      if(ff){
+        ffDate = eDate;
+        eDate = this.formatTime(v.planEndDate + (ff + 1) * 24 * 60 *60 * 1000, this.dateFormatType);
+      }
+      if(parentIdsArr.length === 0){
+        let sPoint:any = {
+          lineId: v.serialNumber,
+          len: v.duration,
+          level: 0,
+          date: sDate,
+          parentLineId: '',
+          ffDate,
+          type: 's',
+        };
+        let ePoint:any = {
+          lineId: v.serialNumber,
+          level: 0,
+          date: eDate,
+          parentLineId: '',
+          type: 'e',
+        }
+        sPoint.parentLineId = '';
+        ePoint.parentLineId = '';
+        dataArr.push(sPoint)
+        dataArr.push(ePoint)
+      }
+      parentIdsArr.forEach((val:string) => {
+        let sPoint:any = {
+          lineId: v.serialNumber,
+          level: 0,
+          date: sDate,
+          parentLineId: val,
+          ffDate,
+          type: 's',
+        };
+        let ePoint:any = {
+          lineId: v.serialNumber,
+          level: 0,
+          date: eDate,
+          parentLineId: val,
+          type: 'e',
+        }
+        dataArr.push(sPoint)
+        dataArr.push(ePoint)
+      })
+    })
+    let startLinePoint = dataArr.find((v: any) => !v.parentLineId && v.type === 's');
+    let liuchengDatePoint  = {
+      date: startLinePoint.date,
+      childLine: [startLinePoint.lineId],
+    };
+    let liuChengData:any = [liuchengDatePoint];
+    this.formatDataPoint(liuchengDatePoint, dataArr, liuChengData);
+    let rDArr:any = [];
+    let dArr:string[] = [];
+    liuChengData.forEach((val:any) => {
+      let d = val.date;
+      if(dArr.includes(d)){
+        rDArr.find((v:any) => v.date === d)?.list.push(val)
       }else{
-      }
-      let sPoint = {
-        id: v.serialNumber,
-        level: 0,
-        date: sDate,
-      };
-      let ePoint = {
-        id: v.serialNumber,
-        level: 0,
-        date: eDate,
-      }
-      dataArr.push(sPoint)
-      dataArr.push(ePoint)
-    })
-    dataArr.sort((v1, v2) => {
-      if (Date.parse(v1.date) > Date.parse(v2.date)) {
-        return 1;
-      } else {
-        return -1;
+        rDArr.push({
+          date: d,
+          list: [val],
+        });
+        dArr.push(d);
       }
     })
-    console.log(dataArr);
-
-
-    return result;
+    let repeatDate = rDArr.filter((val:any) => val.list.length > 1);
+    let pointArr = rDArr.filter((val:any) => val.list.length <= 1).map((val:any) => {
+      return {
+        date: val.date,
+        lineIds: val.list[0].childLine
+      }
+    });
+    let xuIndex = 0;
+    let waitArr:any = [];
+    repeatDate.forEach((v:any) => {
+      let list = v.list;
+      let ids = list.map((val:any) => val.childLine).flat(1);
+      let childLineArr = this.resultDate.filter((d: any) => ids.includes(d.serialNumber));
+      let childLineSDate = childLineArr.map((val:any) => val.planStartDate);
+      childLineSDate = [...new Set(childLineSDate)];
+      let rdArr:any =[];
+      let arr:any =[];
+      childLineArr.forEach((val:any) => {
+        let d = val.planStartDate;
+        if(arr.includes(d)){
+          rdArr.push(d)
+        }else{
+          arr.push(d);
+        }
+      })
+      let rCL = childLineArr.filter((val:any) => rdArr.includes(val.planStartDate));
+      let cl = childLineArr.filter((val:any) => !rdArr.includes(val.planStartDate));
+      rCL.sort((v1:any, v2:any) => {
+        let pV1 = v1.parentId.includes(',');
+        let pV2 = v2.parentId.includes(',');
+        if(pV2 && pV1){
+          return 0;
+        }else if(pV1 && !pV2){
+          return 1;
+        }else if(!pV1 && pV2){
+          return -1;
+        }
+        return
+      })
+      let rClPoint:any = null;
+      if(rCL.length !== 0){
+        rClPoint = {
+          date: v.date,
+          lineIds: [],
+        }
+      }
+      rCL.forEach((val:any) => {
+        if(val.parentId.includes(',')){
+          let linShiId = `linShi-${xuIndex++}`;
+          pointArr.push({
+            linShiId,
+            date: v.date,
+            lineIds: [val.serialNumber],
+          })
+          rClPoint.lineIds.push(linShiId);
+        }else{
+          rClPoint.lineIds.push(val.serialNumber);
+        }
+      })
+      rClPoint && pointArr.push(rClPoint)
+      cl.forEach((val:any) => {
+        let obj = pointArr.find((point:any) =>  point.date === v.date);
+        let d = this.formatTime(val.planStartDate, this.dateFormatType);
+        if(!obj && d === v.date){
+          let obj = pointArr.find((point:any) => point.date === v.date);
+          if(obj){
+            obj.lineIds.push(val.serialNumber)
+          }else{
+            pointArr.push({
+              date: v.date,
+              lineIds: [val.serialNumber],
+            })
+          }
+        }else{
+          waitArr.push({
+            date: v.date,
+            line: val,
+          })
+        }
+      })
+    })
+    waitArr.forEach((val:any) => {
+      let obj = pointArr.find((point:any) =>  point.date === val.date);
+      let d = this.formatTime(val.line.planStartDate, this.dateFormatType);
+      let obj1 = pointArr.find((point:any) =>  point.date === d);
+      if(obj1.linShiId){
+        obj.lineIds.push(obj1.linShiId);
+      }else{
+        let linShiId = `linShi-${xuIndex++}`;
+        obj1.linShiId = linShiId;
+        obj.lineIds.push(linShiId);
+      }
+    })
+    let resultFormatDate:any = [];
+    pointArr.forEach((v:any, i:number) => {
+      v.id = i+1;
+    })
+    pointArr.forEach((point:any) => {
+      let obj:any = {
+        id: point.id,
+        date: point.date,
+      }
+      let lineS = point.lineIds;
+      let lines = [];
+      let pList:any = [];
+      point.lineIds.forEach((p:any) => {
+        let obj1 = dataArr.find((v:any) => v.lineId === p && v.type === 's');
+        let pObj = dataArr.find((v:any) => v.parentLineId === p && v.type === 's');
+        if(pObj){
+          let lineId = pObj.lineId;
+          let o = pointArr.find((v:any) => v.lineIds.includes(lineId));
+          if(o){
+            let l:any = {
+              toId: o.id,
+              lineId: p,
+              type: 0,
+            }
+            if(obj1 && obj1.ffDate){
+              l.date = obj1.ffDate;
+            }
+            pList.push(l);
+          }
+        }else{
+          let o =  pointArr.find((v:any) => v.linShiId === p);
+          if(o) {
+            let l:any = {
+              toId: o.id,
+              type: 1,
+            }
+            if(obj1 && obj1.ffDate){
+              l.date = obj1.ffDate;
+            }
+            pList.push({
+              toId: o.id,
+              lineId: p,
+              type: 1,
+            });
+          }
+        }
+      })
+      obj.lines = pList;
+      resultFormatDate.push(obj)
+    })
+    return resultFormatDate;
   }
+
+  formatDataPoint(liuchengDatePoint:any, dataArr:any, liuChengData:any){
+    if(liuchengDatePoint.childLine){
+      liuchengDatePoint.childLine.forEach((lineId:string) => {
+        let endPoint = dataArr.find((v:any) => v.lineId === lineId && v.type === 'e');
+        let childrenLineObjArr = dataArr.filter((val:any) => val.parentLineId === lineId && val.type == 's');
+        let mergeArr:string[] = [];
+        let noMergeArr:string[] = [];
+        childrenLineObjArr.forEach((v:any) => {
+          // let childParent = this.resultDate.find((val:any) => val.lineId === this.resultDate.serialNumber);
+          if(v.date === endPoint.date){
+            mergeArr.push(v.lineId);
+          }else{
+            noMergeArr.push(v.lineId);
+          }
+        })
+        let mergeArrParents = this.resultDate.filter((val:any) => mergeArr.includes(val.serialNumber)).map((val:any) => val.parentId);
+        let arr:any = [];
+        mergeArrParents.forEach((val:string, index:number )=> {
+          let obj = arr.find((a:any) => a.parentId === val);
+          if(obj){
+            obj.num++;
+            obj.lineId.push(mergeArr[index]);
+          }else{
+            arr.push({
+              parentId: val,
+              lineId: [mergeArr[index]],
+              num: 1,
+            })
+          }
+        })
+        arr.sort((v1:any, v2:any) => {
+          return v1.num > v2.num ? -1 : 1;
+        })
+        if(arr.length !== 1){
+          arr.forEach((val:any, index: number) => {
+            let d = {
+              date: endPoint.date,
+              childLine: val.lineId,
+            };
+            this.addFormatLiuChengData(d, liuChengData)
+            this.formatDataPoint(d, dataArr, liuChengData)
+          })
+        }else if(arr.length === 1){
+          let d = {
+            date: endPoint.date,
+            childLine: mergeArr,
+          };
+          this.addFormatLiuChengData(d, liuChengData)
+          this.formatDataPoint(d, dataArr, liuChengData)
+        }
+        if(noMergeArr.length !== 0){
+          noMergeArr.forEach((val:any) => {
+            let d = {
+              date: endPoint.date,
+              childLine: [val],
+            };
+            this.addFormatLiuChengData(d, liuChengData)
+            this.formatDataPoint(d, dataArr, liuChengData)
+          })
+        }
+        if(arr.length === 0 && noMergeArr.length === 0){
+          let d = {
+            date: endPoint.date,
+            childLine: [],
+          };
+          this.addFormatLiuChengData(d, liuChengData)
+        }
+      })
+      // let lineObjArr = dataArr.filter((val:any) => val.lineId === v);
+
+    }
+  }
+
+  addFormatLiuChengData(d:any, liuChengData){
+    let obj = liuChengData.find((v:any) => v.date === d.date && d.childLine.join(',') === v.childLine.join(','));
+    if(!obj){
+      liuChengData.push(d);
+    }
+  }
+
 
   //绘制
   drawLiucheng() {
-    let d = this.getLiuchengData(data)
-    this.liuchengData = [
-      {
-        id: 1,
-        date: '2009.10.30',
-        level: 1,
-        lines: [
-          {
-            toId: 2,
-            type: 1,
-            date: '2009.10.31',
-            level: 0,
-          },
-          {
-            toId: 9,
-            type: 1,
-            level: 1,
-          },
-          {
-            toId: 10,
-            type: 0,
-            level: 1,
-          },
-          {
-            toId: 15,
-            type: 1,
-            level: 0,
-          },
-        ]
-      },
-      {
-        id: 2,
-        date: '2009.11.01',
-        level: 0,
-        lines: [
-          {
-            toId: 6,
-            type: 0,
-            level: 0,
-          },
-          {
-            toId: 3,
-            type: 1,
-            level: 0,
-          },
-        ]
-      },
-      {
-        id: 3,
-        date: '2009.11.02',
-        level: 0,
-        lines: [
-          {
-            toId: 4,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 4,
-        date: '2009.11.03',
-        level: 0,
-        lines: [
-          {
-            toId: 5,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 5,
-        date: '2009.11.04',
-        level: 0,
-        lines: [
-          {
-            toId: 8,
-            type: 3,
-            date: '2009.11.14',
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 6,
-        date: '2009.11.02',
-        level: 0,
-        lines: [
-          {
-            toId: 7,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 7,
-        date: '2009.11.11',
-        level: 0,
-        lines: [
-          {
-            toId: 8,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 8,
-        date: '2009.11.26',
-        level: 0,
-        lines: [
-          {
-            toId: 25,
-            type: 3,
-            date: '2009.12.06',
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 9,
-        date: '2009.11.07',
-        level: 1,
-        lines: [
-          {
-            toId: 10,
-            type: 0,
-            level: 1,
-          }
-        ]
-      },
-      {
-        id: 10,
-        date: '2009.11.08',
-        level: 1,
-        lines: [
-          {
-            toId: 11,
-            type: 0,
-            level: 0,
-          },
-          {
-            toId: 13,
-            type: 0,
-            level: 1,
-          },
-          {
-            toId: 14,
-            type: 3,
-            date: '2009.11.10',
-            level: 0,
-          },
-        ]
-      },
-      {
-        id: 11,
-        date: '2009.11.11',
-        level: 0,
-        lines: [
-          {
-            toId: 12,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 12,
-        date: '2009.11.16',
-        level: 0,
-        lines: [
-          {
-            toId: 19,
-            type: 3,
-            date: '2009.11.20',
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 13,
-        date: '2009.11.09',
-        level: 1,
-        lines: [
-          {
-            toId: 14,
-            type: 0,
-            level: 1,
-          }
-        ]
-      },
-      {
-        id: 14,
-        date: '2009.11.14',
-        level: 1,
-        lines: [
-          {
-            toId: 18,
-            type: 0,
-            level: 1,
-          },
-          {
-            toId: 19,
-            type: 0,
-            level: 1,
-          },
-        ]
-      },
-      {
-        id: 15,
-        date: '2009.11.02',
-        level: 0,
-        lines: [
-          {
-            toId: 16,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 16,
-        date: '2009.11.03',
-        level: 0,
-        lines: [
-          {
-            toId: 17,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 17,
-        date: '2009.11.16',
-        level: 0,
-        lines: [
-          {
-            toId: 18,
-            type: 2,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 18,
-        date: '2009.11.22',
-        level: 1,
-        lines: [
-          {
-            toId: 19,
-            type: 2,
-            level: 1,
-          }
-        ]
-      },
-      {
-        id: 19,
-        date: '2009.11.23',
-        level: 1,
-        lines: [
-          {
-            toId: 20,
-            type: 0,
-            level: 1,
-          },
-          {
-            toId: 21,
-            type: 0,
-            level: 0,
-          },
-        ]
-      },
-      {
-        id: 20,
-        date: '2009.11.25',
-        level: 1,
-        lines: [
-          {
-            toId: 24,
-            type: 0,
-            level: 0,
-          },
-          {
-            toId: 25,
-            type: 0,
-            level: 1,
-          }
-        ]
-      },
-      {
-        id: 21,
-        date: '2009.11.27',
-        level: 0,
-        lines: [
-          {
-            toId: 22,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 22,
-        date: '2009.12.01',
-        level: 0,
-        lines: [
-          {
-            toId: 23,
-            type: 0,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 23,
-        date: '2009.12.10',
-        level: 0,
-        lines: [
-          {
-            toId: 24,
-            type: 2,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 24,
-        date: '2009.12.10',
-        level: 0,
-        lines: [
-          {
-            toId: 25,
-            type: 2,
-            level: 0,
-          }
-        ]
-      },
-      {
-        id: 25,
-        date: '2009.12.16',
-        level: 1,
-        lines: [
-          {
-            toId: 26,
-            type: 0,
-            level: 1,
-          }
-        ]
-      },
-      {
-        id: 26,
-        date: '2009.12.21',
-        level: 1,
-        lines: [
-          {
-            toId: 27,
-            type: 0,
-            level: 1,
-          }
-        ]
-      },
-      {
-        id: 27,
-        date: '2009.12.31',
-        level: 1,
-      },
-    ];
+    this.liuchengData = this.getLiuchengData(this.resultDate)
+
+
+    // this.liuchengData = [
+    //   {
+    //     id: 1,
+    //     date: '2009.10.30',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 2,
+    //         type: 1,
+    //         date: '2009.10.31',
+    //         level: 0,
+    //       },
+    //       {
+    //         toId: 9,
+    //         type: 1,
+    //         level: 1,
+    //       },
+    //       {
+    //         toId: 10,
+    //         type: 0,
+    //         level: 1,
+    //       },
+    //       {
+    //         toId: 15,
+    //         type: 1,
+    //         level: 0,
+    //       },
+    //     ]
+    //   },
+    //   {
+    //     id: 2,
+    //     date: '2009.11.01',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 6,
+    //         type: 0,
+    //         level: 0,
+    //       },
+    //       {
+    //         toId: 3,
+    //         type: 1,
+    //         level: 0,
+    //       },
+    //     ]
+    //   },
+    //   {
+    //     id: 3,
+    //     date: '2009.11.02',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 4,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 4,
+    //     date: '2009.11.03',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 5,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 5,
+    //     date: '2009.11.04',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 8,
+    //         type: 3,
+    //         date: '2009.11.14',
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 6,
+    //     date: '2009.11.02',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 7,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 7,
+    //     date: '2009.11.11',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 8,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 8,
+    //     date: '2009.11.26',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 25,
+    //         type: 3,
+    //         date: '2009.12.06',
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 9,
+    //     date: '2009.11.07',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 10,
+    //         type: 0,
+    //         level: 1,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 10,
+    //     date: '2009.11.08',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 11,
+    //         type: 0,
+    //         level: 0,
+    //       },
+    //       {
+    //         toId: 13,
+    //         type: 0,
+    //         level: 1,
+    //       },
+    //       {
+    //         toId: 14,
+    //         type: 3,
+    //         date: '2009.11.10',
+    //         level: 0,
+    //       },
+    //     ]
+    //   },
+    //   {
+    //     id: 11,
+    //     date: '2009.11.11',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 12,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 12,
+    //     date: '2009.11.16',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 19,
+    //         type: 3,
+    //         date: '2009.11.20',
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 13,
+    //     date: '2009.11.09',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 14,
+    //         type: 0,
+    //         level: 1,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 14,
+    //     date: '2009.11.14',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 18,
+    //         type: 0,
+    //         level: 1,
+    //       },
+    //       {
+    //         toId: 19,
+    //         type: 0,
+    //         level: 1,
+    //       },
+    //     ]
+    //   },
+    //   {
+    //     id: 15,
+    //     date: '2009.11.02',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 16,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 16,
+    //     date: '2009.11.03',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 17,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 17,
+    //     date: '2009.11.16',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 18,
+    //         type: 2,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 18,
+    //     date: '2009.11.22',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 19,
+    //         type: 2,
+    //         level: 1,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 19,
+    //     date: '2009.11.23',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 20,
+    //         type: 0,
+    //         level: 1,
+    //       },
+    //       {
+    //         toId: 21,
+    //         type: 0,
+    //         level: 0,
+    //       },
+    //     ]
+    //   },
+    //   {
+    //     id: 20,
+    //     date: '2009.11.25',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 24,
+    //         type: 0,
+    //         level: 0,
+    //       },
+    //       {
+    //         toId: 25,
+    //         type: 0,
+    //         level: 1,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 21,
+    //     date: '2009.11.27',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 22,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 22,
+    //     date: '2009.12.01',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 23,
+    //         type: 0,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 23,
+    //     date: '2009.12.10',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 24,
+    //         type: 2,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 24,
+    //     date: '2009.12.10',
+    //     level: 0,
+    //     lines: [
+    //       {
+    //         toId: 25,
+    //         type: 2,
+    //         level: 0,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 25,
+    //     date: '2009.12.16',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 26,
+    //         type: 0,
+    //         level: 1,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 26,
+    //     date: '2009.12.21',
+    //     level: 1,
+    //     lines: [
+    //       {
+    //         toId: 27,
+    //         type: 0,
+    //         level: 1,
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 27,
+    //     date: '2009.12.31',
+    //     level: 1,
+    //   },
+    // ];
+    console.log(this.liuchengData);
     this.liuchengData.sort((v1, v2) => {
       if (Date.parse(v1.date) > Date.parse(v2.date)) {
         return 1;
@@ -886,7 +1142,7 @@ class DisplayUtil {
       }
       if (val.type !== 3) {
         styleStr += 'endArrow=block;';
-        let e1 = this.graph.insertEdge(this.dataCellObj[val.id], null, val.lineLen, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr);
+        let e1 = this.graph.insertEdge(this.dataCellObj[val.id], null, val.lineId, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr);
         if (point) {
           let points: any = [];
           point.forEach((v: any) => {
@@ -984,7 +1240,7 @@ class DisplayUtil {
           })
         })
         if (bolangxian) {
-          this.graph.insertVertex(this.parentCell, null, val.lineLen, bolangxian[0][0], bolangxian[0][1], 0, 0, `text;html=1;align=center;verticalAlign=bottom;fontSize=${this.fontSize};spacing=20;`);
+          this.graph.insertVertex(this.parentCell, null, val.lineId, bolangxian[0][0], bolangxian[0][1], 0, 0, `text;html=1;align=center;verticalAlign=bottom;fontSize=${this.fontSize};spacing=20;`);
           let bx1 = bolangxian[0][0] + 50;
           let bx2 = bolangxian[1][0] - 50;
           let styleStr =

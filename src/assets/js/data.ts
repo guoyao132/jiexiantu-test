@@ -1,21 +1,4 @@
-export default [{
-  "ff": 0,
-  "ef": 3,
-  "serialNumber": "1",
-  "runType": "2",
-  "ls": 0,
-  "isPivotal": "1",
-  "es": 0,
-  "parentId": "",
-  "duration": 3,
-  "tf": 0,
-  "y": 0,
-  "lf": 3,
-  "taskName": "吊顶",
-  "planStartDate": 1678896000000,
-  "planEndDate": 1679068800000,
-  "direction": "0"
-}, {
+export default [ {
   "ff": 0,
   "ef": 6,
   "serialNumber": "2",
@@ -33,6 +16,23 @@ export default [{
   "planEndDate": 1679328000000,
   "direction": "1"
 }, {
+  "ff": 0,
+  "ef": 3,
+  "serialNumber": "1",
+  "runType": "2",
+  "ls": 0,
+  "isPivotal": "1",
+  "es": 0,
+  "parentId": "",
+  "duration": 3,
+  "tf": 0,
+  "y": 0,
+  "lf": 3,
+  "taskName": "吊顶",
+  "planStartDate": 1678896000000,
+  "planEndDate": 1679068800000,
+  "direction": "0"
+},{
   "ff": 0,
   "ef": 5,
   "serialNumber": "3",
@@ -125,7 +125,7 @@ export default [{
   "ls": 10,
   "isPivotal": "0",
   "es": 8,
-  "parentId": "5,6                                                                                                                                                                                                                                                                                                                                                                                                                                                                         ",
+  "parentId": "5,6",
   "duration": 1,
   "tf": 2,
   "y": 90,
