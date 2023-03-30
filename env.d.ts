@@ -25,4 +25,6 @@ declare interface Window{
   RESOURCE_BASE: string,
   mxLanguage: string,
   STYLE_PATH: string,
+  smEncrypt: any,
+  jxt_config:any,
 }

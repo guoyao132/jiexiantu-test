@@ -8,8 +8,11 @@ import {useRoute} from 'vue-router'
 const route = useRoute();
 const query = computed(() => route.query)
 watch(query, (v:any) => {
-  if(v.data){
-    displayUtil.init(v?.data);
+  if(v.data || v.singleId){
+    displayUtil.init({
+      data: v.data,
+      singleId: v.singleId,
+    });
   }
 })
 onMounted(() => {

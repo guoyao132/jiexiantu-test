@@ -7,6 +7,16 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig(({mode}: ConfigEnv) => {
   return {
     base: './',
+    server: {
+      proxy: {
+        '/jiexiantu': {
+          target: 'http://172.18.8.180:9030',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/jiexiantu/, '')
+        }
+      }
+
+    },
     plugins: [vue()],
     resolve: {
       alias: {
