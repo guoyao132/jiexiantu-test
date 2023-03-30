@@ -2,11 +2,20 @@
 <!--  <router-view></router-view>-->
 </template>
 <script setup lang="ts">
-import {onMounted} from 'vue'
+import {onMounted, computed, watch} from 'vue'
 import displayUtil from './assets/js/autoInit'
-
+import {useRoute} from 'vue-router'
+const route = useRoute();
+const query = computed(() => route.query)
+watch(query, (v:any) => {
+  if(v.data){
+    displayUtil.init(v?.data);
+  }
+})
 onMounted(() => {
-  displayUtil.init();
+  if(query.value.data){
+    displayUtil.init(query.value.data as string);
+  }
 })
 </script>
 
