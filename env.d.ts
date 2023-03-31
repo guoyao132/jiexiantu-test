@@ -27,4 +27,5 @@ declare interface Window{
   STYLE_PATH: string,
   smEncrypt: any,
   jxt_config:any,
+  mxEvent: any,
 }

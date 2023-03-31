@@ -313,24 +313,24 @@ Actions.prototype.init = function()
 	this.addAction('selectNone', function() { graph.clearSelection(); }, null, null, Editor.ctrlKey + '+Shift+A');
 	this.addAction('lockUnlock', function()
 	{
-		if (!graph.isSelectionEmpty())
-		{
-			graph.getModel().beginUpdate();
-			try
-			{
-				var defaultValue = graph.isCellMovable(graph.getSelectionCell()) ? 1 : 0;
-				graph.toggleCellStyles(mxConstants.STYLE_MOVABLE, defaultValue);
-				graph.toggleCellStyles(mxConstants.STYLE_RESIZABLE, defaultValue);
-				graph.toggleCellStyles(mxConstants.STYLE_ROTATABLE, defaultValue);
-				graph.toggleCellStyles(mxConstants.STYLE_DELETABLE, defaultValue);
-				graph.toggleCellStyles(mxConstants.STYLE_EDITABLE, defaultValue);
-				graph.toggleCellStyles('connectable', defaultValue);
-			}
-			finally
-			{
-				graph.getModel().endUpdate();
-			}
-		}
+		// if (!graph.isSelectionEmpty())
+		// {
+		// 	graph.getModel().beginUpdate();
+		// 	try
+		// 	{
+		// 		var defaultValue = graph.isCellMovable(graph.getSelectionCell()) ? 1 : 0;
+		// 		graph.toggleCellStyles(mxConstants.STYLE_MOVABLE, defaultValue);
+		// 		graph.toggleCellStyles(mxConstants.STYLE_RESIZABLE, defaultValue);
+		// 		graph.toggleCellStyles(mxConstants.STYLE_ROTATABLE, defaultValue);
+		// 		graph.toggleCellStyles(mxConstants.STYLE_DELETABLE, defaultValue);
+		// 		graph.toggleCellStyles(mxConstants.STYLE_EDITABLE, defaultValue);
+		// 		graph.toggleCellStyles('connectable', defaultValue);
+		// 	}
+		// 	finally
+		// 	{
+		// 		graph.getModel().endUpdate();
+		// 	}
+		// }
 	}, null, null, Editor.ctrlKey + '+L');
 
 	// Navigation actions

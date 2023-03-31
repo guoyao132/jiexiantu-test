@@ -185,9 +185,10 @@ class DisplayUtil {
         dataArr.push(sPoint)
         dataArr.push(ePoint)
       }
+      let parentIds:string[] = [];
       parentIdsArr.forEach((val: string) => {
         let pId = parseInt(val) + '';
-        v.parentId = pId;
+        parentIds.push(pId)
         let sPoint: any = {
           ...v,
           lineId: v.serialNumber,
@@ -244,6 +245,7 @@ class DisplayUtil {
         dataArr.push(sPoint)
         dataArr.push(ePoint)
       })
+      v.parentId = parentIds.join(',');
     })
     let startLinePoints = dataArr.filter((v: any) => !v.parentLineId && v.type === 's').map((v:any) => {
       return {
@@ -254,7 +256,7 @@ class DisplayUtil {
       }
     });
     let startLinePoint = dataArr.find((v: any) => !v.parentLineId && v.type === 's');
-
+    console.log(dataArr);
     let o = {
       "ff": 20,
       "ef": 15,
@@ -343,7 +345,7 @@ class DisplayUtil {
         let pIdArr = pId.split(',');
         let isHas = new Set([...hasLine, ...pIdArr]).size !== (hasLine.length + pIdArr.length);
         if (isHas) {
-          let linShiId = `linShi-${xuIndex++}`;
+          let linShiId = `LS-${xuIndex++}`;
           let rClP:any = {
             pId: pId,
             linShiId,
@@ -401,7 +403,7 @@ class DisplayUtil {
                 }
               }else{
                 let points = rClPoint.filter((q:any) => q.pId.includes(p));
-                let linShiId = `linShi-${xuIndex++}`;
+                let linShiId = `LS-${xuIndex++}`;
                 let rClP:any = {
                   pId: p,
                   linShiId,
@@ -422,7 +424,7 @@ class DisplayUtil {
           if(point){
             point.lineIds.push(val.serialNumber);
           }else{
-            let linShiId = `linShi-${xuIndex++}`;
+            let linShiId = `LS-${xuIndex++}`;
             rClPoint.push({
               linShiId,
               pId: pId,
@@ -473,7 +475,7 @@ class DisplayUtil {
               if (obj1.linShiId) {
                 obj.lineIds.push(obj1.linShiId);
               } else {
-                let linShiId = `linShi-${xuIndex++}`;
+                let linShiId = `LS-${xuIndex++}`;
                 obj1.linShiId = linShiId;
                 obj.lineIds.push(linShiId);
               }
@@ -482,7 +484,7 @@ class DisplayUtil {
         }
       }
       if(needNew){
-        let linShiId = `linShi-${xuIndex++}`;
+        let linShiId = `LS-${xuIndex++}`;
         pointArr.push({
           date: d,
           linShiId,
@@ -494,6 +496,7 @@ class DisplayUtil {
       }
     })
     let resultFormatDate: any = [];
+    console.log(pointArr);
     pointArr.forEach((v: any, i: number) => {
       v.id = i + 1;
     })
@@ -570,11 +573,12 @@ class DisplayUtil {
   }
 
   getPoineD(o:any, obj1:any, pList:any, type = 0, resultFormatDate:any, lineId:string){
-    if(o){
+    let obj = pList.find((v:any) => v.taskName !== '' && v.taskName === (obj1 && obj1.taskName));
+    if(o && !obj){
       let l: any = {
         toId: o.id,
         type: type,
-        taskName: obj1 && obj1.taskName,
+        taskName: obj1 ? obj1.taskName : '',
         lineId,
         level: 0,
       }
@@ -703,10 +707,67 @@ class DisplayUtil {
     this.graph.getModel().endUpdate()
     this.graph.fit(10);
 
+    this.addEvents();
+  }
 
-    setTimeout(() => {
+  addEvents(){
+    // this.graph.addListener(window.mxEvent.CLICK, function(sender, evt) {
+    //   console.log(sender, evt);
+    // });
+    this.graph.getModel().addListener(window.mxEvent.CHANGE, function(sender, evt) {
+      let  changes = evt.getProperty('edit').changes;
+      changes.forEach((change:any) => {
+        let cell = change.cell
+        let cellId = cell?.id || '';
+        if(cellId.includes('point-')){
+          cell.geometry.x =change.previous.x;
+        }
+      })
+    })
+    return;
 
-    }, 3000)
+    const self = this;
+    const container = this.graph.container;
+    let changeCell = null;
+    window.mxEvent.addGestureListeners(container,
+      window.mxUtils.bind(this.graph.view, function (evt:any) {
+        let pt = window.mxUtils.convertPoint(container,
+          window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
+        let cell = self.graph.getCellAt(pt.x, pt.y);
+        let state = this.getState(cell);
+        console.log(cell);
+        // if (state != null) {
+        //   self.graph.fireMouseEvent(window.mxEvent.MOUSE_DOWN,
+        //     new mxMouseEvent(evt, state));
+        // }
+        // else if (this.isContainerEvent(evt) &&
+        //   ((!mxClient.IS_IE &&
+        //       !mxClient.IS_GC && !mxClient.IS_OP && !mxClient.IS_SF) ||
+        //     !this.isScrollEvent(evt))) {
+        //   graph.fireMouseEvent(window.mxEvent.MOUSE_DOWN,
+        //     new mxMouseEvent(evt));
+        // }
+      }),
+      window.mxUtils.bind(this, function (evt) {
+        let pt = window.mxUtils.convertPoint(container,
+          window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
+
+      }),
+      // window.mxUtils.bind(this, function (evt) {
+      //   let pt = window.mxUtils.convertPoint(graph.container,
+      //     window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
+      //   let cell = graph.getCellAt(pt.x, pt.y);
+      //   let state = this.getState(cell);
+      //
+      //   if (state != null) {
+      //     graph.fireMouseEvent(window.mxEvent.MOUSE_UP,
+      //       new mxMouseEvent(evt, state));
+      //   } else if (this.isContainerEvent(evt)) {
+      //     graph.fireMouseEvent(window.mxEvent.MOUSE_UP,
+      //       new mxMouseEvent(evt));
+      //   }
+      // })
+    );
   }
 
   //设置最小时间差
@@ -824,7 +885,7 @@ class DisplayUtil {
             this.pointLevelObj[key] = max + 1;
             l = max;
           }
-          changeLine.push(...lines.map((v:any) => `${key}-${v}`))
+          changeLine.push(...lines.map((v:any) => `${v}-${key}`))
           this.pointLevelObj[key] = l;
         }
       }
@@ -832,7 +893,7 @@ class DisplayUtil {
         let lines = lineObj[key];
         let levelArr = lines.map((id:any) => this.pointLevelObj[id]);
         let l = this.pointLevelObj[key];
-        let line = `${lines[0]}-${key}`;
+        let line = `${key}-${lines[0]}`;
         if(l === 0 || (lines.length === 1 && changeLine.includes(line)) || (lines.length === 1 && this.pointLevelObj[levelArr[0]] != this.pointLevelObj[key])){
           continue;
         }
@@ -1041,12 +1102,12 @@ class DisplayUtil {
       if (v.level === 1) {
         strokeColor = this.colorLevalArr[1];
       }
-      let styleStr = `ellipse;whiteSpace=wrap;html=1;strokeColor=${strokeColor};strokeWidth=${this.strokeWidth};fontSize=${this.fontSize};`;
+      let styleStr = `deletable=0;resizable=0;connectable=0;rotatable=0;ellipse;whiteSpace=wrap;html=1;strokeColor=${strokeColor};strokeWidth=${this.strokeWidth};fontSize=${this.fontSize};`;
       let yLevel = this.pointLevelObj[v.id] || 0;
       let y = this.ySubLength * yLevel;
-      const cell = this.graph.insertVertex(this.parentCell, null, v.id, x, y, this.pointSize, this.pointSize, styleStr);
+      const cell = this.graph.insertVertex(this.parentCell, `point-${v.id}`, v.id, x, y, this.pointSize, this.pointSize, styleStr);
       let s = `text;html=1;align=center;verticalAlign=top;resizable=0;points=[];autosize=1;spacingTop=60`;
-      this.graph.insertVertex(this.parentCell, null, v.date, x, y, 0, 0, s);
+      this.graph.insertVertex(cell, null, v.date, 0, 0, 0, 0, s, true);
       this.dataCellObj[v.id] = cell;
     })
     return cells;
@@ -1109,7 +1170,7 @@ class DisplayUtil {
         entryY = 0.5;
       }
       let styleStr =
-        `jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};exitX=${exitX};exitY=${exitY};exitDx=0;exitDy=0;entryX=${entryX};entryY=${entryY};entryDx=0;entryDy=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
+        `movable=0;jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};exitX=${exitX};exitY=${exitY};exitDx=0;exitDy=0;entryX=${entryX};entryY=${entryY};entryDx=0;entryDy=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
       if (val.type === 1 || val.type === 2 || val.lineId.includes('l-')) {
         styleStr += 'dashed=1;';
       }
@@ -1120,7 +1181,7 @@ class DisplayUtil {
         if(addLineArr.includes(lineBiaoshi)){
           point = [
             [x1 + (exitX * this.pointSize), y2 - (d * entryY * this.pointSize) - d * (this.ySubLength / 2)],
-            [x2 - (entryX * this.pointSize), y2 - (d * entryY * this.pointSize) - d * (this.ySubLength / 2)],
+            // [x2 - (entryX * this.pointSize), y2 - (d * entryY * this.pointSize) - d * (this.ySubLength / 2)],
           ]
         }
       } else if (y1 !== y2) {
@@ -1129,7 +1190,7 @@ class DisplayUtil {
         if(addLineArr.includes(lineBiaoshi)){
           point = [
             [x1 + (exitX * this.pointSize), y1 - (d * entryY * this.pointSize) - d * (this.ySubLength / 2)],
-            [x2 - (entryX * this.pointSize), y1 - (d * entryY * this.pointSize) - d * (this.ySubLength / 2)],
+            // [x2 - (entryX * this.pointSize), y1 - (d * entryY * this.pointSize) - d * (this.ySubLength / 2)],
           ]
         }
       }
@@ -1162,7 +1223,7 @@ class DisplayUtil {
               let y = this.ySubLength;
               point = [
                 [x1 + (exitX * this.pointSize), y2 + (entryY * this.pointSize) + this.ySubLength],
-                [x2 - (entryX * this.pointSize), y1 + (exitY * this.pointSize) + this.ySubLength]
+                // [x2 - (entryX * this.pointSize), y1 + (exitY * this.pointSize) + this.ySubLength]
               ];
             }
           }
@@ -1171,7 +1232,7 @@ class DisplayUtil {
       styleStr += 'endArrow=block;';
       let points:any = null;
       if (val.type !== 3) {
-        styleStr += 'rounded=0;';
+        styleStr += 'rounded=0;edgeStyle=orthogonalEdgeStyle;';
         if (point) {
           points = [];
           point.forEach((v: any) => {
@@ -1179,6 +1240,7 @@ class DisplayUtil {
           })
         }
       } else {
+        // styleStr += 'rounded=0;';
         styleStr += 'curved=1;';
         let type3Line: any = [];
         let bolangxian: any = null;
@@ -1320,7 +1382,7 @@ class DisplayUtil {
     let maxX = this.rightBottomPoint[0];
     let minY = this.leftTopPoint[1];
     let maxY = this.rightBottomPoint[1];
-    let styleStr = `rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeWidth=${this.strokeWidth};fontSize=${this.fontSize};labelBackgroundColor=none;`;
+    let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeWidth=${this.strokeWidth};fontSize=${this.fontSize};labelBackgroundColor=none;`;
     //绘制标尺容器
     this.graph.insertVertex(this.parentCell, null, '日', minX, minY - this.biaochiHeight, this.mainPadding, this.biaochiHeight, styleStr);
     this.graph.insertVertex(this.parentCell, null, '年、月', minX, minY - this.biaochiHeight * 2, this.mainPadding, this.biaochiHeight, styleStr);
@@ -1336,7 +1398,7 @@ class DisplayUtil {
     let allLen = this.getDateDaySub(this.startDate, endDate)
     // dateMinSub
     let biaochiNum = Math.ceil(allLen / this.dateMinSub) + 1;
-    let biaochiLabelStyle = `ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
+    let biaochiLabelStyle = `movable=0;deletable=0;resizable=0;connectable=0;ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
     let prevX = minX + this.mainPadding;
     let prevD = this.formatTime(Date.parse(this.startDate), this.dateFormatType).split('.')[2];
     for (let i = 1; i < biaochiNum; i++) {
@@ -1423,7 +1485,7 @@ class DisplayUtil {
     let maxX = this.rightBottomPoint[0];
     let minY = this.leftTopPoint[1];
     let maxY = this.rightBottomPoint[1];
-    let styleStr = `ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
+    let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
     let bottomHei = 200;
 
     this.addLineEdge([minX, maxY], [minX, maxY + bottomHei]); //左竖线
@@ -1470,12 +1532,12 @@ class DisplayUtil {
       ['非关键性工作', '自由时差'],
       ['关键工作', '需工作'],
     ];
-    let tuliStyleStr = `endArrow=block;jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;rounded=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
+    let tuliStyleStr = `movable=0;deletable=0;resizable=0;connectable=0;endArrow=block;jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;rounded=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
     // strokeColor=${strokeColor};
     let tuliStyle = [
       [
         tuliStyleStr + `strokeColor=${this.colorLevalArr[0]};`,
-        `strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${this.colorLevalArr[0]};curved=1;`
+        `movable=0;deletable=0;resizable=0;connectable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${this.colorLevalArr[0]};curved=1;`
       ],
       [
         tuliStyleStr + `strokeColor=${this.colorLevalArr[1]};`,
@@ -1524,7 +1586,7 @@ class DisplayUtil {
 
   addLineEdge(startPoint: number[], endPoint: number[], text?:string, styleStr?: string) {
     styleStr = styleStr ||
-      `strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=#000000;rounded=0;endArrow=none;`;
+      `movable=0;deletable=0;resizable=0;connectable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=#000000;rounded=0;endArrow=none;`;
     let sKey = `point${startPoint[0]}-${startPoint[1]}`;
     let eKey = `point${endPoint[0]}-${endPoint[1]}`;
     let sV = this.createPointVertex(startPoint[0], startPoint[1]);
