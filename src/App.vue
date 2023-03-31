@@ -23,7 +23,7 @@ onMounted(() => {
 </script>
 
 
-<style scoped>
+<style lang="less" scoped>
   .mxgraph-con{
     width: 100%;
     height: 100%;

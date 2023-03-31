@@ -9,11 +9,7 @@ export default defineConfig(({mode}: ConfigEnv) => {
     base: './',
     server: {
       proxy: {
-        '/jiexiantu': {
-          target: 'http://172.18.8.180:9030',
-          changeOrigin: true,
-          rewrite: path => path.replace(/^\/jiexiantu/, '')
-        }
+        '/rtSingleArrowDiagram': 'http://172.18.8.180:9030'
       }
 
     },
@@ -31,7 +27,13 @@ export default defineConfig(({mode}: ConfigEnv) => {
           drop_debugger: true,
         }
       }
+    },
+    css: {
+      preprocessorOptions: {
+        less: {
+          charset: false,
+        }
+      }
     }
-
   }
 })
