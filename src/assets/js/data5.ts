@@ -86,7 +86,7 @@ export default [{
   "taskName": "砼结构",
   "id": "3a3b51c369ad4f3d9c47c9f1e94e5a9e",
   "daySum": 0,
-  "planStartDate": 1541520000000,
+  "planStartDate": 1541520000000 + 24 * 60 *60 * 1000,
   "planEndDate": 1541692800000,
   "createDate": 1680060744000,
   "direction": "2"

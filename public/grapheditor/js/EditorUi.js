@@ -3806,7 +3806,7 @@ EditorUi.prototype.createUi = function()
 	}
 
 	// Creates the sidebar
-	this.sidebar = (this.editor.chromeless) ? null : this.createSidebar(this.sidebarContainer);
+	// this.sidebar = (this.editor.chromeless) ? null : this.createSidebar(this.sidebarContainer);
 
 	if (this.sidebar != null)
 	{

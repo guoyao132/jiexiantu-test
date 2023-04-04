@@ -11,6 +11,7 @@ window.mxUtils.getAll([bundle, window.STYLE_PATH + '/default.xml'], function(xhr
   let themes = {};
   // @ts-ignore
   themes[window.Graph.prototype.defaultThemeName] = xhr[1].getDocumentElement();
+  window.EditorUi.prototype.formatWidth = 0
   editorui.value = new window.EditorUi(new window.Editor(false, themes));
 }, function()
 {

@@ -67,7 +67,7 @@ class DisplayUtil {
     this.biaochiHeight = 50;
     this.mainPadding = 200;
     this.dateSubLength = 150;
-    this.ySubLength = 100;
+    this.ySubLength = 150;
     this.dateAddSub = 100;
     this.pointSize = 50;
     this.bolangxianSubLength = 10;
@@ -140,7 +140,10 @@ class DisplayUtil {
         'data4': data4,
         'data5': data5,
       }
-      let t = query.data || 'data';
+      let t = query.data;
+      if(!t){
+        return
+      }
       this.resultDate = d[t];
       this.drawLiucheng();
     }
@@ -150,7 +153,26 @@ class DisplayUtil {
     let dataArr: any = [];
     let lineArr: any = [];
     let addLineIndex = 0;
-    this.resultDate.forEach((v: any) => {
+    let result = JSON.parse(JSON.stringify(this.resultDate));
+    let startPoint = result.filter((r: any) => !r.parentId);
+    if(startPoint.length > 1){
+      let startTime = Math.min(...startPoint.map((s:any) => s.planStartDate));
+      let s = {
+        "ff": 0,
+        "serialNumber": "-1",
+        "isPivotal": "1",
+        "parentId": "",
+        "duration": 1,
+        "taskName": "初始点",
+        "planStartDate": startTime - 24 * 60 * 60 * 1000,
+        "planEndDate": startTime - 24 * 60 * 60 * 1000,
+      }
+      result.unshift(s);
+      startPoint.forEach((s:any) => {
+        s.parentId = '-1';
+      })
+    }
+    result.forEach((v: any) => {
       let parentIdsArr = v.parentId ? v.parentId.replace('，', ',').split(',') : [];
       let sDate = this.formatTime(v.planStartDate, this.dateFormatType);
       let eDate = this.formatTime(v.planEndDate + 24 * 60 * 60 * 1000, this.dateFormatType);
@@ -215,7 +237,7 @@ class DisplayUtil {
             let lineId = pId;
             let numIndex = val.indexOf('+');
             let num = Number(val.substring(numIndex).replace('工日', ''));
-            let lineParents = this.resultDate.find((v:any) => v.serialNumber === lineId);
+            let lineParents = result.find((v:any) => v.serialNumber === lineId);
             let sDate = this.formatTime(lineParents.planEndDate + 24 * 60 * 60 * 1000, this.dateFormatType);
             let eDate = this.formatTime(lineParents.planEndDate + (num + 1) * 24 * 60 * 60 * 1000, this.dateFormatType);
             addLineId = 'l-' + addLineIndex++;
@@ -247,31 +269,8 @@ class DisplayUtil {
       })
       v.parentId = parentIds.join(',');
     })
-    let startLinePoints = dataArr.filter((v: any) => !v.parentLineId && v.type === 's').map((v:any) => {
-      return {
-        ...v,
-        date: v.date,
-        level: 1,
-        childLine: [v.lineId],
-      }
-    });
+    console.log(result);
     let startLinePoint = dataArr.find((v: any) => !v.parentLineId && v.type === 's');
-    console.log(dataArr);
-    let o = {
-      "ff": 20,
-      "ef": 15,
-      "serialNumber": "56",
-      "runType": "1",
-      "ls": 56,
-      "isPivotal": "2",
-      "parentId": "54",
-      "duration": 1,
-      "taskName": "吊顶龙骨",
-      "planStartDate": 1542729600000,
-      "planEndDate": 1542816000000,
-      "direction": "2"
-    }
-
     let liuchengDatePoint = {
       ...startLinePoint,
       date: startLinePoint.date,
@@ -283,7 +282,8 @@ class DisplayUtil {
     let rDArr: any = [];
     let dArr: string[] = [];
     let startDateArr:any = [];
-
+    console.log('dataArr', dataArr);
+    console.log('liuChengData', liuChengData);
     liuChengData.forEach((val: any) => {
       let d = val.date;
       if (dArr.includes(d)) {
@@ -308,7 +308,7 @@ class DisplayUtil {
     repeatDate.forEach((v: any) => {
       let list = v.list;
       let ids = list.map((val: any) => val.childLine).flat(1);
-      let childLineArr = this.resultDate.filter((d: any) => ids.includes(d.serialNumber));
+      let childLineArr = result.filter((d: any) => ids.includes(d.serialNumber));
       let childLineSDate = childLineArr.map((val: any) => val.planStartDate);
       childLineSDate = [...new Set(childLineSDate)];
       let rdArr: any = [];
@@ -457,6 +457,7 @@ class DisplayUtil {
         }
       })
     })
+    console.log('repeatDate', repeatDate);
     waitArr.forEach((val: any) => {
       let obj = pointArr.find((point: any) => point.date === val.date);
       let d = this.formatTime(val.line.planStartDate, this.dateFormatType);
@@ -469,7 +470,7 @@ class DisplayUtil {
           obj.lineIds.push(obj1.linShiId);
         }else{
           if(obj1.lineIds.length !== 0){
-            let lineParents = this.resultDate.find((v:any) => v.serialNumber === obj1.lineIds[0]);
+            let lineParents = result.find((v:any) => v.serialNumber === obj1.lineIds[0]);
             if(obj && lineParents && lineParents.parentId === val.line.parentId){
               needNew = false;
               if (obj1.linShiId) {
@@ -495,11 +496,16 @@ class DisplayUtil {
         }
       }
     })
+    console.log('waitArr', waitArr);
     let resultFormatDate: any = [];
-    console.log(pointArr);
     pointArr.forEach((v: any, i: number) => {
-      v.id = i + 1;
+      let index = i + 1;
+      if(startPoint.length > 1){
+        index = i;
+      }
+      v.id = index;
     })
+    console.log('pointArr', pointArr);
     pointArr.forEach((point: any, i: number) => {
       let obj: any = {
         id: point.id,
@@ -519,7 +525,7 @@ class DisplayUtil {
           let endPoints = pointArr.filter(((v:any) => v.date === endDate && v.pId && v.pId.includes(p)));
           let type = 0;
           if(endPoints.length === 0){
-            let onlyChildLine = this.resultDate.find((v:any) => v.parentId === p)?.serialNumber || '';
+            let onlyChildLine = result.find((v:any) => v.parentId === p)?.serialNumber || '';
             if(obj.date !== obj1.date){
               endPoints = pointArr.filter(((v:any) => v.date === obj1.date && (!onlyChildLine || v.lineIds.includes(onlyChildLine))));
               type = 1;
@@ -544,7 +550,7 @@ class DisplayUtil {
           for(let i = 0; i < endPoints.length; i++){
             let endPoint = endPoints[i];
             let testId = endPoint.  lineIds[0];
-            let testIdParent = this.resultDate.find((v:any) => v.serialNumber === testId);
+            let testIdParent = result.find((v:any) => v.serialNumber === testId);
             if(testIdParent && testIdParent.parentId.includes(p)){
               this.getPoineD(endPoint, obj1, pList, type, resultFormatDate, p);
               break;
@@ -568,17 +574,27 @@ class DisplayUtil {
         return -1;
       }
     })
-    console.log(resultFormatDate);
+    console.log('resultFormatDate', resultFormatDate);
     return resultFormatDate;
   }
 
   getPoineD(o:any, obj1:any, pList:any, type = 0, resultFormatDate:any, lineId:string){
     let obj = pList.find((v:any) => v.taskName !== '' && v.taskName === (obj1 && obj1.taskName));
+    let taskName = obj1 ? obj1.taskName : '';
+    if(o.pId === '-1'){
+      taskName = '-1';
+    }else{
+      let lineId1 = o.lineIds[0];
+      let obj = this.resultDate.find((r: any) => r.serialNumber === lineId1);
+      if(obj && !obj.parentId){
+        taskName = '-1';
+      }
+    }
     if(o && !obj){
       let l: any = {
         toId: o.id,
         type: type,
-        taskName: obj1 ? obj1.taskName : '',
+        taskName: taskName,
         lineId,
         level: 0,
       }
@@ -606,7 +622,7 @@ class DisplayUtil {
         let mergeArr: string[] = [];
         let noMergeArr: string[] = [];
         childrenLineObjArr.forEach((v: any) => {
-          if (v.date === endPoint.date) {
+          if (v.date === endPoint.date && lineId !== '-1') {
             mergeArr.push(v.lineId);
           } else {
             noMergeArr.push(v.lineId);
@@ -697,6 +713,7 @@ class DisplayUtil {
     this.addAllEdge();
     this.addPointCell();
     this.addLineCell();
+    // this.editorUi.toggleFormatPanel();
     this.graph.getModel().endUpdate()
 
     //更新线
@@ -705,7 +722,7 @@ class DisplayUtil {
     let node = enc.encode(this.graph.getModel());
     this.editorUi.editor.setGraphXml(node);
     this.graph.getModel().endUpdate()
-    this.graph.fit(10);
+    this.graph.fit(10, false, 0, true,false, false);
 
     this.addEvents();
   }
@@ -714,7 +731,7 @@ class DisplayUtil {
     // this.graph.addListener(window.mxEvent.CLICK, function(sender, evt) {
     //   console.log(sender, evt);
     // });
-    this.graph.getModel().addListener(window.mxEvent.CHANGE, function(sender, evt) {
+    this.graph.getModel().addListener(window.mxEvent.CHANGE, function(sender:any, evt:any) {
       let  changes = evt.getProperty('edit').changes;
       changes.forEach((change:any) => {
         let cell = change.cell
@@ -734,6 +751,7 @@ class DisplayUtil {
         let pt = window.mxUtils.convertPoint(container,
           window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
         let cell = self.graph.getCellAt(pt.x, pt.y);
+        //@ts-ignore
         let state = this.getState(cell);
         console.log(cell);
         // if (state != null) {
@@ -748,7 +766,7 @@ class DisplayUtil {
         //     new mxMouseEvent(evt));
         // }
       }),
-      window.mxUtils.bind(this, function (evt) {
+      window.mxUtils.bind(this, function (evt:any) {
         let pt = window.mxUtils.convertPoint(container,
           window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
 
@@ -834,6 +852,90 @@ class DisplayUtil {
       }
     })
     this.changePointXSort();
+    this.changeMoreStart();
+  }
+
+  //当有多个起点时
+  changeMoreStart(){
+    if(this.liuchengData[0] && this.liuchengData[0].id === 0){
+      let resultStart = this.resultDate.filter((r: any) => !r.parentId);
+      let resultStartTaskNames = resultStart.map((r:any) => {
+        return r.taskName
+      })
+      let sObj:LiuChengData = this.liuchengData[0];
+      let sLines = sObj?.lines || [];
+      let sId = sLines[0]?.toId;
+      let startPoint:LiuChengData | undefined = this.liuchengData.find((l:any) => l.id === sId);
+      let startPoints:any = [];
+      let lines =  startPoint?.lines;
+      lines?.forEach((l:any) => {
+        if(l.taskName !== '-1' && resultStartTaskNames.includes(l.taskName)){
+          startPoints.push(startPoint)
+        }else{
+          startPoints.push(this.getFirstStartPoint(l.toId, resultStartTaskNames));
+        }
+      })
+      startPoints.sort((v1:any, v2:any) => {
+        let i1 = resultStartTaskNames.findIndex((v:any) => v === v1.lines[0].taskName);
+        let i2 = resultStartTaskNames.findIndex((v:any) => v === v2.lines[0].taskName);
+        if(i1 > i2){
+          return 1;
+        }else if(i1 < i2){
+          return -1;
+        }else {
+          return 0;
+        }
+      })
+      let prevMax:number = -1;
+      let changePointArr:number[] = [];
+      startPoints.forEach((s:any, i:number) => {
+        let allPointId = this.getAllNextPointId(s);
+        if(i !== 0){
+          let min = Math.min(...allPointId.map((id:number) => this.pointLevelObj[id]));
+          let sub = prevMax;
+          allPointId.forEach((id:number) => {
+            if(!changePointArr.includes(id)){
+              let level = this.pointLevelObj[id] + sub;
+              this.pointLevelObj[id] = level;
+            }
+          })
+        }
+        changePointArr.push(...allPointId)
+        prevMax = Math.max(...allPointId.map((id:number) => this.pointLevelObj[id]));
+      })
+
+    }
+  }
+
+  getAllNextPointId(obj:any){
+    let allPointId:number[] = [];
+    const getChildNextPoint = (objC:any) => {
+      allPointId.push(objC.id);
+      let lines = objC.lines.filter((l:any) => l.taskName !== '-1');
+      let ids = lines.map((l:any) => l.toId);
+      ids.forEach((id:number) => {
+        let o:LiuChengData | undefined = this.liuchengData.find((l:any) => l.id === id);
+        if(o && !allPointId.includes(o.id)){
+          getChildNextPoint(o);
+        }
+      })
+    }
+    getChildNextPoint(obj);
+    return allPointId;
+  }
+  getFirstStartPoint(id:number, resultStartTaskNames:any):LiuChengData | null{
+    let obj:LiuChengData | undefined = this.liuchengData.find((l:any) => l.id === id);
+    if(obj){
+      let objTaskNames = obj.lines?.filter((l:any) => l.taskName && l.taskName !== -1).map((l:any) => l.taskName) || [];
+      let isHas = new Set([...resultStartTaskNames, ...objTaskNames]).size !== (resultStartTaskNames.length + objTaskNames.length);
+      if(isHas){
+        return obj;
+      }else{
+        return null;
+      }
+    }else{
+      return null;
+    }
   }
 
   //处理在同一竖线进行
@@ -1093,6 +1195,9 @@ class DisplayUtil {
     let xml = [];
     let lines = [];
     this.liuchengData.forEach(v => {
+      if(v.id === 0){
+        return;
+      }
       let needNum = this.needAddSubDateNum(v.date);
       let x = this.getDateXLen(v.date);
       if (v.id !== 1) {
@@ -1133,6 +1238,9 @@ class DisplayUtil {
       }
     })
     this.linesArr.forEach((val: any) => {
+      if(val.taskName === '-1'){
+        return;
+      }
       let lineBiaoshi = `${val.id}-${val.toId}`;
       let strokeColor = this.colorLevalArr[0];
       if (val.level === 1) {
@@ -1145,6 +1253,9 @@ class DisplayUtil {
       let exitY = 0.5;
       let entryX = 0;
       let entryY = 0.5;
+      if(!this.dataCellObj[val.id] || !this.dataCellObj[val.toId]){
+        return
+      }
       let g1 = this.dataCellObj[val.id].geometry;
       let g2 = this.dataCellObj[val.toId].geometry;
       let y1 = g1.y;
@@ -1170,7 +1281,7 @@ class DisplayUtil {
         entryY = 0.5;
       }
       let styleStr =
-        `movable=0;jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};exitX=${exitX};exitY=${exitY};exitDx=0;exitDy=0;entryX=${entryX};entryY=${entryY};entryDx=0;entryDy=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
+        `jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};exitX=${exitX};exitY=${exitY};exitDx=0;exitDy=0;entryX=${entryX};entryY=${entryY};entryDx=0;entryDy=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
       if (val.type === 1 || val.type === 2 || val.lineId.includes('l-')) {
         styleStr += 'dashed=1;';
       }
@@ -1232,7 +1343,7 @@ class DisplayUtil {
       styleStr += 'endArrow=block;';
       let points:any = null;
       if (val.type !== 3) {
-        styleStr += 'rounded=0;edgeStyle=orthogonalEdgeStyle;';
+        styleStr += 'rounded=0;edgeStyle=orthogonalEdgeStyle;movable=0;';
         if (point) {
           points = [];
           point.forEach((v: any) => {
@@ -1244,7 +1355,7 @@ class DisplayUtil {
         styleStr += 'curved=1;';
         let type3Line: any = [];
         let bolangxian: any = null;
-        let x = this.getDateXLen(val.date);
+        let x = this.getDateXLen(val.date) + this.pointSize;
         let yS = y1 + (entryY * this.pointSize);
         let yE = y2 + (entryY * this.pointSize);
         let pointS = [x1 + (exitX * this.pointSize), yS];
@@ -1331,8 +1442,13 @@ class DisplayUtil {
             index++;
             linpoints.push(new window.mxPoint(x, y));
           }
-
-          linpoints.push(new window.mxPoint(bx2, bolangxian[0][1]))
+          if(Math.abs(bolangxian[0][0] - bolangxian[1][0]) > this.dateSubLength){
+            linpoints.push(new window.mxPoint(bx2, bolangxian[0][1]))
+            linpoints.push(new window.mxPoint(bolangxian[1][0], bolangxian[0][1]))
+          }else{
+            let lastP = linpoints.pop();
+            linpoints.push(new window.mxPoint(lastP.x, bolangxian[0][1]))
+          }
           let bolangXianIndex = type3Line.findIndex((v:any) => v === 'bolangxian');
           type3Line.splice(bolangXianIndex, 1, ...linpoints);
         }

@@ -1496,7 +1496,7 @@ Actions.prototype.init = function()
 	{
 		ui.toggleFormatPanel();
 	}), null, null, Editor.ctrlKey + '+Shift+P');
-	action.setToggleAction(true);
+	action.setToggleAction(false);
 	action.setSelectedCallback(mxUtils.bind(this, function() { return ui.formatWidth > 0; }));
 	action = this.addAction('outline', mxUtils.bind(this, function()
 	{
