@@ -45,6 +45,7 @@ class DisplayUtil {
   dataCellObj: any;       //cell节点对象
   linesArr: any;          //线数组
   pointLevelObj: any;     //点位等级对象
+  lineLevelObj: any;     //线等级对象
   liuchengData: LiuChengData[];
   needUpLevelData: any;  //需要更新等级的数组
   startDate: string;        //工程开始时间
@@ -84,6 +85,7 @@ class DisplayUtil {
     this.linesArr = [];
     this.dataCellObj = {};
     this.pointLevelObj = {};
+    this.lineLevelObj = {};
     this.liuchengData = [];
     this.needUpLevelData = [];
     this.startDate = '';
@@ -498,7 +500,7 @@ class DisplayUtil {
     this.setDateSub();
     this.formataLines();
     this.formatData();
-    // this.addLineLevel();
+    this.addLineLevel();
     this.graph.getModel().beginUpdate()
     this.addAllEdge();
     this.addPointCell();
@@ -615,9 +617,23 @@ class DisplayUtil {
       })
     })
     this.linesArr = lines;
-    let canAddSubLine = this.linesArr.filter((v: any) => v.lineLen != 0 && v.lineLen < this.dateMinSub);
+    // let canAddSubLine = this.linesArr.filter((v: any) => v.lineLen != 0 && v.lineLen < this.dateMinSub);
+    let canAddSubLine:any = new Set();
+    this.linesArr.forEach((v:any) => {
+      let toObj = this.liuchengData.find(l => l.id === v.toId);
+      let eDate = toObj?.date || '';
+      let date = v.date;
+      if(date){
+        let ff = this.getDateDaySub(date, eDate);
+        canAddSubLine.add(date)
+        canAddSubLine.add(eDate)
+      }
+      if(v.lineLen != 0 && v.lineLen < this.dateMinSub){
+        canAddSubLine.add(v.eDate)
+      }
+    })
     // let canAddSubLineDate = canAddSubLine.map((v:any) => v.sDate + '-' + v.eDate + ', ' + v.id + '-' + v.toId);
-    this.needAddSubDate = [...new Set(canAddSubLine.map((v: any) => v.eDate) as string[])];
+    this.needAddSubDate = [...canAddSubLine];
     this.linesArr.sort((v1:any, v2:any) => {
       if (Date.parse(v1.eDate) > Date.parse(v2.eDate)) {
         return 1;
@@ -640,23 +656,21 @@ class DisplayUtil {
   formatData() {
     this.needUpLevelData = [];
     this.pointLevelObj = {};
+    this.lineLevelObj = {};
     this.liuchengData.forEach(v => {
       v.len = this.getDateDaySub(v.date, this.startDate);
       this.changePointLeval(v.id)
     })
     this.needUpLevelData.reverse();
-    console.log(this.needUpLevelData);
     this.needUpLevelData.forEach((v: any) => {
       this.upPrevLeval(v.id, v.level, v.toId);
     })
-    // this.changePointYSort()
-    // this.addMoreStartPoint();
-    // this.changeMoreStart();
+    this.changePointYSort()
   }
 
   addLineLevel(){
-
     let addLineArr:any = [];
+    let lineLevelObj:any = {};
     this.linesArr.forEach((val: any) => {
       if(val.taskName === '-1'){
         return;
@@ -665,12 +679,151 @@ class DisplayUtil {
       let objStart = this.liuchengData.find((v => v.id === val.id));
       let objEnd = this.liuchengData.find((v => v.id === val.toId));
       let objStartLines = objStart?.lines;
-      if(objStartLines && objStartLines.length > 1){
-        console.log(val.id, val.toId, objStart);
-        console.log(this.pointLevelObj[val.id], this.pointLevelObj[val.toId]);
+      if(objStartLines && objStartLines.length >= 1){
+        let sLeval = this.pointLevelObj[val.id];
+        let eLevel = this.pointLevelObj[val.toId];
+        let sDate = Date.parse(objStart?.date || '');
+        let eDate = Date.parse(objEnd?.date || '');
+        let level = sLeval;
+        if(Math.abs(sLeval) < Math.abs(eLevel)){
+          level = eLevel;
+        }
+        this.upTopLevelPoint(sDate, eDate, level,val.id, val.toId, val, lineLevelObj);
       }
-
     })
+    let upArr = [];
+    let levelEqual:any = {};
+    let keys = Object.keys(lineLevelObj);
+    let lineLevelObjValues = Object.values(lineLevelObj);
+    let hasLevel:any = [];
+    let levelObjArr:any = [];
+    let lineLevelObjNew:any = {};
+    let changeLeval:any = [];
+    let parentLineUp = (v:number, value:any, is = false) => {
+      if(hasLevel.includes(v)){
+        let index = hasLevel.findIndex((l:any) => l === v);
+        let levelObj = levelObjArr[index];
+        let obj = levelObj[levelObj.length - 1];
+        let lastTime = Math.max(...obj.slice(1).map((o:any) => o.eDate));
+        let startTime = Math.min(...obj.slice(1).map((o:any) => o.sDate));
+        let sDate = value[1].sDate;
+        let eDate = value[1].eDate;
+        if(lastTime > sDate || eDate < lastTime ){
+          let d = 1;
+          if(obj[0] < 0){
+            d = -1;
+          }
+          let upV = obj[0] + (d * obj.length - 1);
+          value[0] = upV;
+          let changeObjArr = value.slice(1).map((l:any) => l.changeId);
+          changeLeval.push([value[0], value[0] + value.length - 2])
+          changeObjArr.forEach((ids:number[]) => {
+            ids.forEach((id:number) => {
+              this.pointLevelObj[id] = this.getUpPointLevel(this.pointLevelObj[id], obj.length - 2);
+            })
+          })
+          let minL = value[0];
+          let maxL = value[0] + value.length - 2;
+          if(hasLevel.includes(upV)){
+            let valueNew = lineLevelObjValues.find((l: any) => l[0] === upV);
+            let i = hasLevel.findIndex((l:any) => l === upV);
+            levelObjArr.splice(i, 1, [value]);
+            parentLineUp(upV, valueNew, true)
+          }else{
+            hasLevel.push(upV);
+            levelObjArr.push([value]);
+          }
+          let needAdd = lineLevelObjValues.filter((l: any) => l[0] > minL && l[0] <= maxL);
+          let needAddLeval = maxL + 1;
+          needAdd.forEach((n:any) => {
+            n[0] = needAddLeval;
+            if(hasLevel.includes(needAddLeval)){
+              let valueNew = lineLevelObjValues.find((l: any) => l[0] === needAddLeval);
+              let i = hasLevel.findIndex((l:any) => l === needAddLeval);
+              levelObjArr.splice(i, 1, [n]);
+              parentLineUp(needAddLeval, valueNew, true)
+            }else{
+              hasLevel.push(needAddLeval);
+              levelObjArr.push([n]);
+            }
+          })
+
+        }
+      }else{
+        hasLevel.push(v);
+        levelObjArr.push([value]);
+      }
+    }
+    for(let key of keys){
+      let value = lineLevelObj[key];
+      let o = value;
+      let v = value[0];
+      parentLineUp(v, value);
+    }
+    for(let key of keys){
+      let value = lineLevelObj[key];
+      lineLevelObjNew[key] = value.map((v:any) => {
+        if(v.taskName){
+          return v.taskName
+        }else{
+          return v;
+        }
+      })
+    }
+    this.lineLevelObj = lineLevelObjNew;
+    this.addMoreStartPoint();
+  }
+
+  upTopLevelPoint(sDate:number, eDate:number, level:number, id:number, toId:number, lineObj:any, lineLevelObj:any){
+    let needAddArr = this.liuchengData.find((d:LiuChengData) => {
+      let time = Date.parse(d.date);
+      let l:number = this.pointLevelObj[d.id];
+      if(time > sDate && time < eDate && l === level){
+        return true
+      }else{
+        return false
+      }
+    })
+    if(needAddArr) {
+      let lineBiaoshi = `${id}-${toId}`;
+      let sub = 0;
+      let startLeval = 1;
+      if (level !== 0) {
+        if(level > 0) {
+          startLeval = level - 1;
+        }else{
+          startLeval = level + 1;
+        }
+      }
+      let changeId:number[] = [];
+      this.liuchengData.forEach((d: LiuChengData) => {
+        let time = Date.parse(d.date);
+        let l: number = this.pointLevelObj[d.id];
+        let arr: any = [];
+        this.findLastZeroPoint(d.id, arr);
+        let ids = arr.map((val: any) => val.toId);
+        ids = [...new Set(ids)]
+        let timeIds = this.getDateById(ids);
+        let lastTime = Math.max(...timeIds.map(v => v.time));
+        let isLevel = level === 0 ? l > level : l >= level;
+        if (time <= eDate && isLevel && lastTime > sDate) {
+          this.pointLevelObj[d.id] = this.getUpPointLevel(this.pointLevelObj[d.id]);
+          changeId.push(d.id);
+        }
+      })
+      let obj = {
+        ...lineObj,
+        sDate,
+        eDate,
+        changeId,
+      }
+      // let obj = lineObj.taskName;
+      if (lineLevelObj[id]) {
+        lineLevelObj[id].push(obj)
+      } else {
+        lineLevelObj[id] = [startLeval, obj];
+      }
+    }
   }
 
   addMoreStartPoint(){
@@ -756,26 +909,6 @@ class DisplayUtil {
   }
 
   //当有多个起点时
-  changeMoreStart(){
-    let startPoint:LiuChengData | undefined = this.liuchengData.find((d:any) => d.id === 0);
-    if(startPoint) {
-      let lines0 = startPoint?.lines || [];
-      let toId = lines0[0].toId;
-      let startLinesPoint: LiuChengData = this.liuchengData.find((d: any) => d.id === toId) || {
-        date: '',
-        id: 1,
-        len: 1,
-        lines: [],
-        level: 0,
-      };
-      let startPoints:any = [];
-      let lines =  startLinesPoint?.lines;
-
-      lines?.forEach((l:any) => {
-        startPoints.push(this.getFirstStartPoint(l.toId, resultStartTaskNames));
-      })
-    }
-  }
 
   getAllNextPointId(obj:any){
     let allPointId:number[] = [];
@@ -872,7 +1005,6 @@ class DisplayUtil {
               return isHas;
             })
             // this.upPrevLeval(v.id, v.level, v.toId);
-            console.log(dArr);
           }
         }
       }
@@ -926,7 +1058,12 @@ class DisplayUtil {
         return 1;
       }
     })
+    let hasId:number[] = [];
     lineArr.forEach((v: any, i: number) => {
+      if(hasId.includes(v.toId)){
+        return
+      }
+      hasId.push(v.toId);
       if (idLevel !== 0) {
         let level = idLevel;
         if (i !== 0) {
@@ -936,7 +1073,7 @@ class DisplayUtil {
             level++;
           }
         }
-        if (change && this.pointLevelObj[v.toId] !== undefined) {
+        if(change && this.pointLevelObj[v.toId] !== undefined) {
           this.pointLevelObj[v.toId] = level;
         }else if (this.pointLevelObj[v.toId] === undefined) {
           this.pointLevelObj[v.toId] = level;
@@ -947,8 +1084,41 @@ class DisplayUtil {
           level *= -1;
         }
         let oldLevel = this.pointLevelObj[v.toId];
-        if(oldLevel !== 0)
+        if(oldLevel !== 0) {
           this.pointLevelObj[v.toId] = level;
+          let needUpLevelDataArr = this.needUpLevelData.filter((n:any) => v.toId === n.toId)
+          if(needUpLevelDataArr.length !== 0){
+            if(level === 0){
+              this.needUpLevelData = this.needUpLevelData.filter((n:any) => v.toId !== n.toId)
+              needUpLevelDataArr.forEach((n:any) => {
+                let id = n.id;
+                let obj:LiuChengData | undefined = this.liuchengData.find((d:any) => d.id === id);
+                let linesIds = obj?.lines?.map((ll:any) => ll.toId);
+                let changLevel = n.level;
+                linesIds?.forEach((lid:number) => {
+                  let l = this.pointLevelObj[lid];
+                  if(Math.abs(l) >= Math.abs(changLevel)){
+                    if(changLevel > 0){
+                      if(l < 0){
+                        this.pointLevelObj[lid] = -this.pointLevelObj[lid];
+                      }else{
+                        this.pointLevelObj[lid] = -(this.pointLevelObj[lid] - 1);
+                      }
+                    }else{
+                      if(Math.abs(l) !== Math.abs(changLevel)){
+                        if(l < 0){
+                          this.pointLevelObj[lid] = -this.pointLevelObj[lid];
+                        }else{
+                          this.pointLevelObj[lid] = -(this.pointLevelObj[lid] - 1);
+                        }
+                      }
+                    }
+                  }
+                })
+              })
+            }
+          }
+        }
         if (oldLevel !== undefined && level !== 0) {
           let arr = this.liuchengData.filter((d:any) => (d.lines.map((l:any) => l.toId)).includes(v.toId) && d.id !== id)
           arr.forEach((a:any) => {
@@ -964,10 +1134,10 @@ class DisplayUtil {
             })
           })
           this.changePointLeval(v.toId, true);
-        }else{
-
         }
-        if (idLevel === 0 && lineArr.length > 1 && level !== 0) {
+
+        let lineArrIds = new Set(lineArr.map((a:any) => a.toId));
+        if (idLevel === 0 && lineArrIds.size > 1 && level !== 0) {
           this.needUpLevelData.push({
             id: id,
             level,
@@ -999,20 +1169,16 @@ class DisplayUtil {
         lines?.forEach((line: any) => {
           let l = this.pointLevelObj[line.toId] || 0;
           if (l >= level && l !== 0) {
-            console.log('-------------------------')
-            console.log(id, setId, v,line.toId);
             let arr: any = [];
             this.findLastZeroPoint(line.toId, arr);
             let ids = arr.map((val: any) => val.toId);
             ids = [...new Set(ids)]
-            console.log(ids);
             let timeIds = this.getDateById(ids);
             let lastTime = Math.max(...timeIds.map(v => v.time));
             if (lastTime >= nowTime) {
               let allChangePoint: any = [line];
               this.getAllToZeorPoints(line.toId, allChangePoint);
               let allChangeIds = [...new Set(allChangePoint.map((p: any) => p.toId))];
-              console.log(allChangeIds);
               let minIdsLevel = allChangeIds.map((i:any) => this.pointLevelObj[i])
               let upLevel = 0;
               allChangeIds.forEach((id: any) => {
@@ -1021,7 +1187,7 @@ class DisplayUtil {
                   let idChilds = idObj?.lines?.find((val: any) => val.toId === setId)
                   let setIdChilds = setObj?.lines?.find((val: any) => val.toId === id)
                   if ((!idChilds || idObj?.date === setObj?.date) && !setIdChilds){
-                    changeIds.push(id);
+                    // changeIds.push(id);
                     let oldLevel = this.pointLevelObj[id];
                     let sTime = Date.parse(obj?.date || '');
                     let level1 = this.getUpPointLevel(this.pointLevelObj[id]) + upLevel;
@@ -1042,8 +1208,6 @@ class DisplayUtil {
                     if(lineIds?.includes(id)){
                       getLevel(level1);
                     }
-                    // this.upTopLevelPoint(sTime, lastTime, oldLevel, id)
-                    console.log(id);
                     this.pointLevelObj[id] = level1
                   }
                 }
@@ -1053,23 +1217,6 @@ class DisplayUtil {
         })
       })
     }
-  }
-
-  upTopLevelPoint(sDate:number, eDate:number, level:number, id:number){
-    let needAddArr = this.liuchengData.find((d:LiuChengData) => {
-      let time = Date.parse(d.date);
-      let l:number = this.pointLevelObj[d.id];
-      if(time > sDate && time < eDate && Math.abs(l) <= Math.abs(level)){
-        console.log(l, level)
-        return true
-      }else{
-        return false
-      }
-    })
-    if(needAddArr){
-      console.log(id, needAddArr);
-    }
-
   }
 
   //根据传入的ID数组获取 id的时间的id数组
@@ -1133,11 +1280,11 @@ class DisplayUtil {
   }
 
   // 获取点位升级后的层级
-  getUpPointLevel(level: number) {
+  getUpPointLevel(level: number, num:number = 1) {
     if (level <= 0) {
-      return level - 1;
+      return level - num;
     } else {
-      return level + 1;
+      return level + num;
     }
   }
 
@@ -1221,7 +1368,7 @@ class DisplayUtil {
         styleStr += 'jumpStyle=arc;';
       }
       let point: any = null;
-      if (((y1 >= 0 && y2 >= 0) || (y1 <= 0 && y2 <= 0)) && Math.abs(y1) < Math.abs(y2)) {
+      if (((y1 >= 0 && y2 >= 0) || (y1 <= 0 && y2 <= 0)) && Math.abs(y1) <= Math.abs(y2)) {
         let d = 1 || y2 < 0 ? -1 : 1;
         point = [[x1 + (exitX * this.pointSize), y2 - (d * entryY * this.pointSize)]];
         if(addLineArr.includes(lineBiaoshi)){
@@ -1248,34 +1395,50 @@ class DisplayUtil {
       } else {
         styleStr += 'spacing=20;';
       }
-      if (y1 === y2) {
-        point = null;
-        if (this.pointLevelObj[val.id] === this.pointLevelObj[val.toId] && (this.pointLevelObj[val.toId] !== 0 || val.level === 0)) {
-          let level = this.pointLevelObj[val.id];
-          let levelPoint: any = [];
-          for (let key in this.pointLevelObj) {
-            if (this.pointLevelObj[key] === level) {
-              levelPoint.push(key);
-            }
+      // if (y1 === y2) {
+      //   point = null;
+      //   if (this.pointLevelObj[val.id] === this.pointLevelObj[val.toId] && (this.pointLevelObj[val.toId] !== 0 || val.level === 0)) {
+      //     let level = this.pointLevelObj[val.id];
+      //     let levelPoint: any = [];
+      //     for (let key in this.pointLevelObj) {
+      //       if (this.pointLevelObj[key] === level) {
+      //         levelPoint.push(key);
+      //       }
+      //     }
+      //     let obj1 = objStart;
+      //     let obj2 = objEnd;
+      //     let time1 = Date.parse(obj1?.date || '');
+      //     let time2 = Date.parse(obj2?.date || '');
+      //     if (!isNaN(time1) && !isNaN(time2)) {
+      //       let points = this.liuchengData.filter((v => {
+      //         let t = Date.parse(v.date);
+      //         return levelPoint.includes(v.id + '') && t > time1 && t < time2
+      //       }));
+      //       if (points.length !== 0) {
+      //         point = [
+      //           [x1 + (exitX * this.pointSize), y2 + (entryY * this.pointSize) + this.ySubLength],
+      //           // [x2 - (entryX * this.pointSize), y1 + (exitY * this.pointSize) + this.ySubLength]
+      //         ];
+      //       }
+      //     }
+      //   }
+      // }
+      if(this.lineLevelObj[val.id]){
+        let index = this.lineLevelObj[val.id].findIndex((lId:any) => lId === val.taskName);
+        if(index !== -1){
+          let l = this.lineLevelObj[val.id][0];
+          let d = 1;
+          if(l < 0){
+            d = -1;
           }
-          let obj1 = objStart;
-          let obj2 = objEnd;
-          let time1 = Date.parse(obj1?.date || '');
-          let time2 = Date.parse(obj2?.date || '');
-          if (!isNaN(time1) && !isNaN(time2)) {
-            let points = this.liuchengData.filter((v => {
-              let t = Date.parse(v.date);
-              return levelPoint.includes(v.id + '') && t > time1 && t < time2
-            }));
-            if (points.length !== 0) {
-              point = [
-                [x1 + (exitX * this.pointSize), y2 + (entryY * this.pointSize) + this.ySubLength],
-                // [x2 - (entryX * this.pointSize), y1 + (exitY * this.pointSize) + this.ySubLength]
-              ];
-            }
-          }
+          let startLeval = l + d * (index -1 );
+          point = [
+            [x1 + (exitX * this.pointSize),  (entryY * this.pointSize) + this.ySubLength * startLeval],
+          ];
+          console.log(point, val.taskName);
         }
       }
+
       styleStr += 'endArrow=block;';
       let points:any = null;
       if (val.type !== 3) {
@@ -1294,7 +1457,7 @@ class DisplayUtil {
         // styleStr += 'curved=1;';
         let type3Line: any = [];
         let bolangxian: any = null;
-        let x = this.getDateXLen(val.date) + this.pointSize;
+        let x = this.getDateXLen(val.date);
         let yS = y1 + (entryY * this.pointSize);
         let yE = y2 + (entryY * this.pointSize);
         let pointS = [x1 + (exitX * this.pointSize), yS];
@@ -1373,8 +1536,8 @@ class DisplayUtil {
             let s = this.bolangxianSubLength;
             let sY = this.bolangxianSubLength / 2;
             if(Math.abs(bolangxian[0][0] - bolangxian[1][0]) <= this.dateSubLength){
-              s = s / 5;
-              sY = sY / 2
+              // s = s / 5;
+              // sY = sY / 2
             }
             for (let i = bx1 + s; i < bx2; i = i + s) {
               let x = i + s;
@@ -1427,10 +1590,28 @@ class DisplayUtil {
   // 添加主边框
   addMainEdge() {
     let levelArr = ([...new Set(Object.values(this.pointLevelObj))] as number[]).filter((l: number) => l != undefined);
-    let maxLevel = Math.max(...levelArr);
-    let minLevel = Math.min(...levelArr);
+    let lineLevalArr = Object.values(this.lineLevelObj).map((l:any) => {
+      return l.map((ll:any, index: number) => {
+        if(index === 0){
+          return ll;
+        }else{
+          let l1 = l[0];
+          let d = 1;
+          if(l1 < 0){
+            d = -1;
+          }
+          return l1 + d * (index -1 );
+        }
+      })
+    }).flat(1);
+    lineLevalArr = [...new Set(lineLevalArr)];
+    console.log(levelArr,lineLevalArr);
+    let minLevel = Math.min(...levelArr, ...lineLevalArr);
+    let maxLevel = Math.max(...levelArr, ...lineLevalArr);
+    console.log(maxLevel);
     let minY = minLevel * this.ySubLength - this.mainPadding;
     let maxY = maxLevel * this.ySubLength + this.mainPadding;
+    console.log(maxY);
     let minX = -this.mainPadding;
     let allLen = this.getDateDaySub(this.startDate, this.endDate)
     let needNum = this.needAddSubDateNum(this.endDate);
