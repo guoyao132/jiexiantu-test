@@ -1,6 +1,7 @@
 import editorui from './graphInit';
 import {watch} from 'vue'
-import {getDiagramList} from '../../api'
+import {getDiagramList} from '../../api/index'
+// import data from './data'
 import data from './data'
 import data1 from './data1'
 import data2 from './data2'
@@ -16,7 +17,6 @@ interface LiuChengLineData {
   len?: number,
   level?: number,
   date?: string,
-  taskName?: string,
 }
 
 interface LiuChengData {
@@ -65,9 +65,9 @@ class DisplayUtil {
   constructor() {
     this.isInit = false;
     this.biaochiHeight = 50;
-    this.mainPadding = 250;
-    this.dateSubLength = 100;
-    this.ySubLength = 100;
+    this.mainPadding = 200;
+    this.dateSubLength = 150;
+    this.ySubLength = 150;
     this.dateAddSub = 100;
     this.pointSize = 50;
     this.bolangxianSubLength = 10;
@@ -80,6 +80,7 @@ class DisplayUtil {
     this.dateFormatType = 'y.m.d';
     this.editorUi = null;
     this.graph = null;
+
     this.parentCell = null;
     this.linesArr = [];
     this.dataCellObj = {};
@@ -149,6 +150,8 @@ class DisplayUtil {
   }
 
   getLiuchengData() {
+    let dataArr: any = [];
+    let lineArr: any = [];
     let addLineIndex = 0;
     let result = JSON.parse(JSON.stringify(this.resultDate));
     let startPoint = result.filter((r: any) => !r.parentId);
@@ -169,20 +172,8 @@ class DisplayUtil {
         s.parentId = '-1';
       })
     }
-    let sPointArr:any = [];
-    let ePointArr:any = [];
-    result.sort((v1:any, v2:any) => {
-      if (v1.planStartDate > v2.planStartDate) {
-        return 1;
-      } else if (v1.planStartDate < v2.planStartDate) {
-        return -1;
-      }else{
-        return 0
-      }
-    })
     result.forEach((v: any) => {
-      let parentId =  v.parentId ? v.parentId.replace('，', ',') : '';
-      let parentIdsArr = parentId.split(',');
+      let parentIdsArr = v.parentId ? v.parentId.replace('，', ',').split(',') : [];
       let sDate = this.formatTime(v.planStartDate, this.dateFormatType);
       let eDate = this.formatTime(v.planEndDate + 24 * 60 * 60 * 1000, this.dateFormatType);
       let ff = v.ff;
@@ -191,242 +182,322 @@ class DisplayUtil {
         ffDate = eDate;
         eDate = this.formatTime(v.planEndDate + (ff + 1) * 24 * 60 * 60 * 1000, this.dateFormatType);
       }
-      let pointSerialNumber = v.serialNumber;
-      let lines = result.filter((r: any) => {
-        let pIds = r.parentId ? r.parentId.replace('，', ',').split(',') : [];
-        return pIds.includes(pointSerialNumber);
-      }).map((l:any) => {
-        let f = l.ff;
-        let fD = '';
-        if (f) {
-          fD = this.formatTime(l.planEndDate + 24 * 60 * 60 * 1000, this.dateFormatType);;
-        }
-        return {
-          serialNumber: l.serialNumber,
-          taskName: l.taskName,
-          level: l.isPivotal === '1' ? 1 : 0,
-          date: fD || null
-        };
-      });
-      if(pointSerialNumber === '-1'){
-        let obj1:any = {
-          parentIds:  parentId,
-          serialNumber: pointSerialNumber,
+      if (parentIdsArr.length === 0) {
+        let sPoint: any = {
+          ...v,
+          lineId: v.serialNumber,
+          len: v.duration,
+          isPivotal: v.isPivotal,
+          level: 0,
           date: sDate,
-          level: v.isPivotal === '1' ? 1 : 0,
-          childLine: [{
-            serialNumber: pointSerialNumber,
-            level: v.isPivotal === '1' ? 1 : 0,
-            taskName: v.taskName,
-            date: ffDate || null
-          }],
-        };
-
-        let obj2:any = {
-          parentSerialNumber: pointSerialNumber,
-          date: eDate,
-          level: v.isPivotal === '1' ? 1 : 0,
-          childLine: lines,
-        };
-        sPointArr.push(obj1);
-        ePointArr.push(obj2);
-      }else{
-        let obj1:any = {
-          parentIds:  parentId,
-          serialNumber: pointSerialNumber,
-          date: sDate,
-          level: v.isPivotal === '1' ? 1 : 0,
-          childLine: [{
-            serialNumber: pointSerialNumber,
-            level: v.isPivotal === '1' ? 1 : 0,
-            taskName: v.taskName,
-            date: ffDate || null
-          }],
+          parentLineId: '',
           ffDate,
+          type: 's',
         };
-        let obj2:any = {
-          parentSerialNumber: pointSerialNumber,
+        let ePoint: any = {
+          ...v,
+          lineId: v.serialNumber,
+          level: 0,
           date: eDate,
-          level: v.isPivotal === '1' ? 1 : 0,
-          childLine: lines,
+          parentLineId: '',
+          type: 'e',
+        }
+        sPoint.parentLineId = '';
+        ePoint.parentLineId = '';
+        dataArr.push(sPoint)
+        dataArr.push(ePoint)
+      }
+      let parentIds:string[] = [];
+      parentIdsArr.forEach((val: string) => {
+        let pId = parseInt(val) + '';
+        parentIds.push(pId)
+        let sPoint: any = {
+          ...v,
+          lineId: v.serialNumber,
+          level: 0,
+          date: sDate,
+          parentLineId: pId,
+          parentLineIdStr: val,
+          isPivotal: v.isPivotal,
+          ffDate,
+          type: 's',
         };
-        if(parentId.includes('FS')){
-          let parentIdArr = parentId.split(',');
-          let parentIds = parentIdArr.map((p:any) => parseInt(p) + '').join(',')
-          let pIds:string[] = [];
-          let addLineIdArr:string[] = []
-          parentIdArr.forEach((id:string) => {
-            if(id.includes('FS')){
-              let numIndex = id.indexOf('+');
-              let num = Number(id.substring(numIndex).replace('工日', ''));
-              let lineId = parseInt(id) + '';
-              let lineParents = result.find((v:any) => v.serialNumber === lineId);
-              let sDateFS = this.formatTime(lineParents.planEndDate + 24 * 60 * 60 * 1000, this.dateFormatType);
-              let eDateFS = this.formatTime(lineParents.planEndDate + (num + 1) * 24 * 60 * 60 * 1000, this.dateFormatType);
-              let addLineId = 'l-' + addLineIndex++;
-              addLineIdArr.push(addLineId);
-              let ePoint = ePointArr.find((e: any) => e.parentSerialNumber === lineId);
-              if(ePoint){
-                ePoint.childLine.push({
-                  serialNumber: addLineId,
-                  level: v.isPivotal === '1' ? 1 : 0,
-                  taskName: 'FS',
-                })
-              }
-
-              let obj3:any = {
-                parentIds:  parentIds,
-                serialNumber: addLineId,
-                date: sDateFS,
-                level: v.isPivotal === '1' ? 1 : 0,
-                childLine: [{
-                  serialNumber: addLineId,
-                  level: v.isPivotal === '1' ? 1 : 0,
-                  taskName: 'FS',
-                }],
-              };
-              sPointArr.push(obj3);
-              let obj4:any = {
-                parentSerialNumber: addLineId,
-                date: eDateFS,
-                level: v.isPivotal === '1' ? 1 : 0,
-                childLine: [{
-                  serialNumber: pointSerialNumber,
-                  level: v.isPivotal === '1' ? 1 : 0,
-                  taskName: v.taskName,
-                }],
-              };
-              ePointArr.push(obj4);
-            }else{
-              pIds.push(id);
-            }
-          })
-          obj1.parentIds = [...addLineIdArr, ...pIds].join(',');
+        let ePoint: any = {
+          ...v,
+          lineId: v.serialNumber,
+          level: 0,
+          date: eDate,
+          parentLineId: pId,
+          parentLineIdStr: val,
+          type: 'e',
         }
-        sPointArr.push(obj1);
-        ePointArr.push(obj2);
-      }
-    })
-    let changePoint:any = {};
-    ePointArr.forEach((ep:any) => {
-      let childLine:any = ep.childLine;
-      let pointType:any = {};
-      childLine.forEach((c:any) => {
-        let serialNumber = c.serialNumber;
-        let sPoint = sPointArr.find((sp:any) => sp.serialNumber === serialNumber)
-        if(sPoint){
-          let parentIdsArrStr = sPoint.parentIds;
-          if(pointType[parentIdsArrStr]){
-            pointType[parentIdsArrStr].push(serialNumber)
-          }else{
-            pointType[parentIdsArrStr] = [serialNumber];
+        let addLineId = '';
+        if(val.length > 1){
+          if(val.includes('FS')){
+            let lineId = pId;
+            let numIndex = val.indexOf('+');
+            let num = Number(val.substring(numIndex).replace('工日', ''));
+            let lineParents = result.find((v:any) => v.serialNumber === lineId);
+            let sDate = this.formatTime(lineParents.planEndDate + 24 * 60 * 60 * 1000, this.dateFormatType);
+            let eDate = this.formatTime(lineParents.planEndDate + (num + 1) * 24 * 60 * 60 * 1000, this.dateFormatType);
+            addLineId = 'l-' + addLineIndex++;
+            let sPointL: any = {
+              lineId: addLineId,
+              level: 1,
+              date: sDate,
+              parentLineId: lineId,
+              isPivotal: v.isPivotal,
+              type: 's',
+            };
+            let ePointL: any = {
+              lineId: addLineId,
+              level: 1,
+              date: eDate,
+              parentLineId: lineId,
+              type: 'e',
+            }
+            dataArr.push(sPointL)
+            dataArr.push(ePointL)
           }
         }
-      })
-      let keyArr = Object.keys(pointType);
-      keyArr.forEach((key: string) => {
-        let value = pointType[key];
-        if(!key.includes(',')){
-          ep.childLine = [];
-          let childLineLin:any = [];
-          value.forEach((v:any) => {
-            let index = sPointArr.findIndex((s:any) => s.serialNumber === v);
-            if(index !== -1){
-              childLineLin.push(sPointArr[index].childLine[0])
-              sPointArr.splice(index, 1);
-            }
-          })
-          ep.childLine = childLineLin;
-        }else{
-          if(changePoint[key]){
-            changePoint[key] = [...new Set([...changePoint[key], ...value])];
-          }else{
-            changePoint[key] = value;
-          }
+        if(addLineId){
+          sPoint.parentLineId = addLineId;
+          ePoint.parentLineId = addLineId;
         }
+        dataArr.push(sPoint)
+        dataArr.push(ePoint)
       })
+      v.parentId = parentIds.join(',');
     })
-    let pointArr = [
-      ...sPointArr,
-      ...ePointArr
-    ];
-    pointArr.sort((v1:any, v2:any) => {
-      if (Date.parse(v1.date) > Date.parse(v2.date)) {
-        return 1;
+    console.log(result);
+    let startLinePoint = dataArr.find((v: any) => !v.parentLineId && v.type === 's');
+    let liuchengDatePoint = {
+      ...startLinePoint,
+      date: startLinePoint.date,
+      level: 1,
+      childLine: [startLinePoint.lineId],
+    };
+    let liuChengData: any = [liuchengDatePoint];
+    this.formatDataPoint(liuchengDatePoint, dataArr, liuChengData);
+    let rDArr: any = [];
+    let dArr: string[] = [];
+    let startDateArr:any = [];
+    console.log('dataArr', dataArr);
+    console.log('liuChengData', liuChengData);
+    liuChengData.forEach((val: any) => {
+      let d = val.date;
+      if (dArr.includes(d)) {
+        rDArr.find((v: any) => v.date === d)?.list.push(val)
       } else {
-        return -1;
+        rDArr.push({
+          date: d,
+          list: [val],
+        });
+        dArr.push(d);
       }
     })
+    let repeatDate = rDArr.filter((val: any) => val.list.length > 1);
+    let pointArr = rDArr.filter((val: any) => val.list.length <= 1).map((val: any) => {
+      return {
+        date: val.date,
+        lineIds: val.list[0].childLine
+      }
+    });
     let xuIndex = 0;
-    let changeKey = Object.keys(changePoint);
-    changeKey.forEach((key:string) => {
-      let value = changePoint[key];
-      let ids = key.split(',');
-      if(value.length === 1){
-        let v = value[0];
-        let hasOnlyPoint = pointArr.filter((p:any) => p.childLine.findIndex((p1:any) => p1.serialNumber === v) !== -1);
-        pointArr = pointArr.filter((p:any) => !((p.childLine.findIndex((p1:any) => p1.serialNumber === v) !== -1) && p.childLine.length === 1 && ids.includes(p.parentSerialNumber)));
-        let point = hasOnlyPoint.find((p:any) => p.parentIds === key && p.serialNumber === v);
-        let linShiId = `LS-${xuIndex++}`;
-        let isAdd = false;
-        ids.forEach((i:string) => {
-          let obj = pointArr.find((p:any) => p.parentSerialNumber === i && !p.parentIds);
-          if(obj){
-            isAdd = true;
-            obj.childLine = obj.childLine.filter((l:any) => l.serialNumber !== v);
-            point.linShiId = linShiId;
-            let old = hasOnlyPoint.filter((p:any) => ((p.childLine.findIndex((p1:any) => p1.serialNumber === v) !== -1) && p.childLine.length === 1 && ids.includes(p.parentSerialNumber)));
-            if(old.length !== 0){
-              point.parentSerialNumber = old.map((o:any) => o.parentSerialNumber).join(',');
+    let waitArr: any = [];
+    repeatDate.forEach((v: any) => {
+      let list = v.list;
+      let ids = list.map((val: any) => val.childLine).flat(1);
+      let childLineArr = result.filter((d: any) => ids.includes(d.serialNumber));
+      let childLineSDate = childLineArr.map((val: any) => val.planStartDate);
+      childLineSDate = [...new Set(childLineSDate)];
+      let rdArr: any = [];
+      let arr: any = [];
+      childLineArr.forEach((val: any) => {
+        let d = val.planStartDate;
+        if (arr.includes(d)) {
+          rdArr.push(d)
+        } else {
+          arr.push(d);
+        }
+      })
+      let rCL = childLineArr.filter((val: any) => rdArr.includes(val.planStartDate));
+      let cl = childLineArr.filter((val: any) => !rdArr.includes(val.planStartDate));
+      rCL.sort((v1: any, v2: any) => {
+        let pV1 = v1.parentId.includes(',');
+        let pV2 = v2.parentId.includes(',');
+        if (pV2 && pV1) {
+          return 0;
+        } else if (pV1 && !pV2) {
+          return 1;
+        } else if (!pV1 && pV2) {
+          return -1;
+        }
+        return
+      })
+      let rClPoint: any = null;
+      if (rCL.length !== 0) {
+        rClPoint = []
+      }
+      let hasLine:any = [];
+      rCL.forEach((val: any) => {
+        let pId = val.parentId;
+        let pIdArr = pId.split(',');
+        let isHas = new Set([...hasLine, ...pIdArr]).size !== (hasLine.length + pIdArr.length);
+        if (isHas) {
+          let linShiId = `LS-${xuIndex++}`;
+          let rClP:any = {
+            pId: pId,
+            linShiId,
+            date: v.date,
+            lineIds: [val.serialNumber],
+          }
+          rClPoint.push(rClP)
+          let noAddPid:string[] = [];
+          let isAddPid:string[] = [];
+          let arr2:string[] = [];
+          pIdArr.forEach((p:any) => {
+            let obj = rClPoint.find((q:any) => q.pId === p);
+            if(obj && linShiId !== obj.linShiId){
+              hasLine.push(p);
+              obj.lineIds.push(linShiId);
+            }else{
+              if(hasLine.includes(p)){
+                noAddPid.push(p);
+              }else{
+                arr2.push(p)
+              }
             }
-            obj.childLine.push({
-              toId: linShiId,
-              type: 1,
-              level: 0,
-              taskName: 'LS'
+          })
+          if(arr2.length != 0){
+            // noAddPid.push(arr2.join(','))
+          }
+          // isAddPid.forEach((p:any) => {
+          //   rClP.oldPid = rClP.pId
+          //   rClP.pId = rClP.pId.replace(`${p},`, '').replace(`,${p}`, '');
+          // })
+          if(noAddPid){
+            noAddPid.forEach( (p:any) => {
+              let obj = rClPoint.find((q:any) => q.pId === p);
+              if(obj){
+                let points = rClPoint.find((q:any) => q.pId === p && p.oldPid && p.oldPid != pId);
+                if(points){
+                  points.lineIds.push(linShiId);
+                }else{
+                  let objArr = rClPoint.filter((q:any) => q.pId === p);
+                  let noAdd = true;
+                  objArr.forEach((o:any) => {
+                    if(o.oldPid !== pId && o.linShiId !== linShiId){
+                      noAdd = false;
+                      o.lineIds.push(linShiId);
+                    }
+                  })
+                  if(noAdd){
+                    let points = rClPoint.find((q:any) => q.lineIds.includes(linShiId));
+                    if(points){
+                      let index = points.lineIds.indexOf(linShiId);
+                      index !== -1 && (points.lineIds.splice(index, 1))
+                      rClP.lineIds.push(points.linShiId);
+                    }
+                  }
+                }
+              }else{
+                let points = rClPoint.filter((q:any) => q.pId.includes(p));
+                let linShiId = `LS-${xuIndex++}`;
+                let rClP:any = {
+                  pId: p,
+                  linShiId,
+                  date: v.date,
+                  lineIds: [],
+                }
+                points.forEach((po:any) => {
+                  po.oldPid = po.pId;
+                  po.pId = po.pId.replace(`${p},`, '').replace(`,${p}`, '');
+                  rClP.lineIds.push(po.linShiId);
+                })
+                rClPoint.push(rClP)
+              }
             })
           }
-        })
-        if(!isAdd){
-          let old = hasOnlyPoint.filter((p:any) => ((p.childLine.findIndex((p1:any) => p1.serialNumber === v) !== -1) && p.childLine.length === 1 && ids.includes(p.parentSerialNumber)));
-          if(old){
-            point.parentSerialNumber = old.map((o:any) => o.parentSerialNumber).join(',');
+        } else {
+          let point = rClPoint.find((p:any) => p.pId === pId);
+          if(point){
+            point.lineIds.push(val.serialNumber);
+          }else{
+            let linShiId = `LS-${xuIndex++}`;
+            rClPoint.push({
+              linShiId,
+              pId: pId,
+              date: v.date,
+              lineIds: [val.serialNumber],
+            })
+            hasLine.push(...pIdArr)
           }
         }
-      }else{
-        let v = value[0];
-        let hasOnlyPoint = pointArr.filter((p:any) => p.childLine.findIndex((p1:any) => value.includes(p1.serialNumber)) !== -1);
-        pointArr = pointArr.filter((p:any) => !((p.childLine.findIndex((p1:any) => value.includes(p1.serialNumber)) !== -1) && p.childLine.length === 1 && ids.includes(p.parentSerialNumber)));
-        if(value.length > 1){
-          pointArr = pointArr.filter((p:any) => !(p.parentIds === key && value.slice(1).includes(p.serialNumber)));
-        }
-        let point = hasOnlyPoint.find((p:any) => p.parentIds === key && p.serialNumber === v);
-        let allP = hasOnlyPoint.filter((p:any) => p.parentIds === key && value.includes(p.serialNumber));
-
-        if(allP.length > 1){
-          let allchildLind = allP.map((a:any) => a.childLine).flat(1);
-          point.childLine = allchildLind;
-        }
-        let linShiId = `LS-${xuIndex++}`;
-        ids.forEach((i:string) => {
-          let obj = pointArr.find((p:any) => p.parentSerialNumber === i && !p.parentIds);
-          if(obj){
-            obj.childLine = obj.childLine.filter((l:any) => !value.includes(l.serialNumber));
-            point.linShiId = linShiId;
-            let old = hasOnlyPoint.filter((p:any) => ((p.childLine.findIndex((p1:any) => value.includes(p1.serialNumber)) !== -1) && p.childLine.length === 1 && ids.includes(p.parentSerialNumber)));
-            if(old.length !== 0){
-              point.parentSerialNumber = old.map((o:any) => o.parentSerialNumber).join(',');
-            }
-            obj.childLine.push({
-              toId: linShiId,
-              type: 1,
-              level: 0,
-              taskName: 'LS'
+      })
+      rClPoint && pointArr.push(...rClPoint)
+      cl.forEach((val: any) => {
+        let obj = pointArr.find((point: any) => point.date === v.date);
+        let d = this.formatTime(val.planStartDate, this.dateFormatType);
+        if (!obj && d === v.date) {
+          let obj = pointArr.find((point: any) => point.date === v.date);
+          if (obj) {
+            obj.lineIds.push(val.serialNumber)
+          } else {
+            pointArr.push({
+              date: v.date,
+              lineIds: [val.serialNumber],
             })
           }
+        } else {
+          waitArr.push({
+            date: v.date,
+            line: val,
+          })
+        }
+      })
+    })
+    console.log('repeatDate', repeatDate);
+    waitArr.forEach((val: any) => {
+      let obj = pointArr.find((point: any) => point.date === val.date);
+      let d = this.formatTime(val.line.planStartDate, this.dateFormatType);
+      let obj1Arr = pointArr.filter((point: any) => point.date === d);
+      let needNew = true;
+      for(let i = 0; i < obj1Arr.length; i++){
+        let obj1 = obj1Arr[i];
+        if(obj && obj1.linShiId && obj1.lineIds.includes(val.line.serialNumber)){
+          needNew = false;
+          obj.lineIds.push(obj1.linShiId);
+        }else{
+          if(obj1.lineIds.length !== 0){
+            let lineParents = result.find((v:any) => v.serialNumber === obj1.lineIds[0]);
+            if(obj && lineParents && lineParents.parentId === val.line.parentId){
+              needNew = false;
+              if (obj1.linShiId) {
+                obj.lineIds.push(obj1.linShiId);
+              } else {
+                let linShiId = `LS-${xuIndex++}`;
+                obj1.linShiId = linShiId;
+                obj.lineIds.push(linShiId);
+              }
+            }
+          }
+        }
+      }
+      if(needNew){
+        let linShiId = `LS-${xuIndex++}`;
+        pointArr.push({
+          date: d,
+          linShiId,
+          lineIds: [val.line.serialNumber]
         })
+        if(obj){
+          obj.lineIds.push(linShiId);
+        }
       }
     })
+    console.log('waitArr', waitArr);
+    let resultFormatDate: any = [];
     pointArr.forEach((v: any, i: number) => {
       let index = i + 1;
       if(startPoint.length > 1){
@@ -434,55 +505,195 @@ class DisplayUtil {
       }
       v.id = index;
     })
-    let resultFormatDate:LiuChengData[] = [];
-    pointArr.forEach((p:any) => {
-      let lines:LiuChengLineData[] = [];
-      let childLine:any = p.childLine;
-      childLine.forEach((c:any) => {
-        if(c.toId){
-          let obj = pointArr.find((p1:any) => p1.linShiId === c.toId);
-          lines.push({
-            ...c,
-            toId: obj.id,
-          });
+    console.log('pointArr', pointArr);
+    pointArr.forEach((point: any, i: number) => {
+      let obj: any = {
+        id: point.id,
+        date: point.date,
+        level: point.id === 1 ? 1 : (point.level || 0),
+      }
+      let lineS = point.lineIds;
+      let lines = [];
+      let pList: any = [];
+      point.lineIds.forEach((p: any) => {
+        let obj1 = dataArr.find((v: any) => v.lineId === p && v.type === 's');
+        let o = pointArr.find((v: any) => v.linShiId === p);
+        if (o) {
+          this.getPoineD(o, obj1, pList, 1, resultFormatDate, p);
         }else{
-          let serialNumber = c.serialNumber;
-          let point = pointArr.find((p1:any) => {
-            let parentSerialNumber = (p1.parentSerialNumber && p1.parentSerialNumber.split(',')) || []
-            return parentSerialNumber.includes(serialNumber);
-          });
-          if(point){
-            let type = 0;
-            if(c.date){
-              type = 3;
-            }
-            if(c.taskName === 'FS'){
+          let endDate = dataArr.find((v: any) => v.lineId === p && v.type === 'e')?.date;
+          let endPoints = pointArr.filter(((v:any) => v.date === endDate && v.pId && v.pId.includes(p)));
+          let type = 0;
+          if(endPoints.length === 0){
+            let onlyChildLine = result.find((v:any) => v.parentId === p)?.serialNumber || '';
+            if(obj.date !== obj1.date){
+              endPoints = pointArr.filter(((v:any) => v.date === obj1.date && (!onlyChildLine || v.lineIds.includes(onlyChildLine))));
               type = 1;
+            }else{
+              endPoints = pointArr.filter(((v:any) => v.date === endDate && (!onlyChildLine || v.lineIds.includes(onlyChildLine))));
             }
-            lines.push({
-              toId: point.id,
-              type: type,
-              level: c.level,
-              date: c.date,
-              taskName: c.taskName,
+            if(endPoints.length === 0){
+              endPoints = pointArr.filter(((v:any) => v.date === endDate));
+            }
+            endPoints.sort((v1:any, v2:any) => {
+              let l1 = v1.lineIds.length;
+              let l2 = v2.lineIds.length;
+              if(l1 > l2){
+                return 1;
+              }else if(l1 === l2){
+                return 0
+              }else {
+                return -1
+              }
             })
-          }else{
-            console.error(serialNumber);
+          }
+          for(let i = 0; i < endPoints.length; i++){
+            let endPoint = endPoints[i];
+            let testId = endPoint.  lineIds[0];
+            let testIdParent = result.find((v:any) => v.serialNumber === testId);
+            if(testIdParent && testIdParent.parentId.includes(p)){
+              this.getPoineD(endPoint, obj1, pList, type, resultFormatDate, p);
+              break;
+            }else{
+              if(type === 1){
+                this.getPoineD(endPoint, {}, pList, type, resultFormatDate, p);
+              }else{
+                this.getPoineD(endPoint, obj1, pList, type, resultFormatDate, p);
+              }
+            }
           }
         }
       })
-      resultFormatDate.push({
-        id: p.id,
-        date: p.date,
-        level: p.level,
-        lines: lines
-      })
+      obj.lines = pList;
+      resultFormatDate.push(obj)
     })
-    console.log(pointArr);
-    console.log(resultFormatDate);
+    resultFormatDate.sort((v1:any, v2:any) => {
+      if (Date.parse(v1.date) > Date.parse(v2.date)) {
+        return 1;
+      } else {
+        return -1;
+      }
+    })
+    console.log('resultFormatDate', resultFormatDate);
     return resultFormatDate;
   }
 
+  getPoineD(o:any, obj1:any, pList:any, type = 0, resultFormatDate:any, lineId:string){
+    let obj = pList.find((v:any) => v.taskName !== '' && v.taskName === (obj1 && obj1.taskName));
+    let taskName = obj1 ? obj1.taskName : '';
+    if(o.pId === '-1'){
+      taskName = '-1';
+    }else{
+      let lineId1 = o.lineIds[0];
+      let obj = this.resultDate.find((r: any) => r.serialNumber === lineId1);
+      if(obj && !obj.parentId){
+        taskName = '-1';
+      }
+    }
+    if(o && !obj){
+      let l: any = {
+        toId: o.id,
+        type: type,
+        taskName: taskName,
+        lineId,
+        level: 0,
+      }
+      if (obj1 && obj1.ffDate) {
+        l.date = obj1.ffDate;
+        l.type = 3;
+      }
+      if (obj1 && obj1.isPivotal === '1') {
+        l.level = 1;
+        o.level = 1;
+        let d = resultFormatDate.find(((v:any) => v.id === o.id));
+        if(d && d.level !== 1){
+          d.level = 1;
+        }
+      }
+      pList.push(l);
+    }
+  }
+
+  formatDataPoint(liuchengDatePoint: any, dataArr: any, liuChengData: any) {
+    if (liuchengDatePoint.childLine) {
+      liuchengDatePoint.childLine.forEach((lineId: string) => {
+        let endPoint = dataArr.find((v: any) => v.lineId === lineId && v.type === 'e');
+        let childrenLineObjArr = dataArr.filter((val: any) => val.parentLineId === lineId && val.type == 's');
+        let mergeArr: string[] = [];
+        let noMergeArr: string[] = [];
+        childrenLineObjArr.forEach((v: any) => {
+          if (v.date === endPoint.date && lineId !== '-1') {
+            mergeArr.push(v.lineId);
+          } else {
+            noMergeArr.push(v.lineId);
+          }
+        })
+        let mergeArrParents = this.resultDate.filter((val: any) => mergeArr.includes(val.serialNumber)).map((val: any) => val.parentId);
+        let arr: any = [];
+        mergeArrParents.forEach((val: string, index: number) => {
+          let obj = arr.find((a: any) => a.parentId === val);
+          if (obj) {
+            obj.num++;
+            obj.lineId.push(mergeArr[index]);
+          } else {
+            arr.push({
+              parentId: val,
+              lineId: [mergeArr[index]],
+              num: 1,
+            })
+          }
+        })
+        arr.sort((v1: any, v2: any) => {
+          return v1.num > v2.num ? -1 : 1;
+        })
+        if (arr.length !== 1) {
+          arr.forEach((val: any, index: number) => {
+            let d = {
+              ...endPoint,
+              date: endPoint.date,
+              childLine: val.lineId,
+            };
+            this.addFormatLiuChengData(d, liuChengData)
+            this.formatDataPoint(d, dataArr, liuChengData)
+          })
+        } else if (arr.length === 1) {
+          let d = {
+            ...endPoint,
+            date: endPoint.date,
+            childLine: mergeArr,
+          };
+          this.addFormatLiuChengData(d, liuChengData)
+          this.formatDataPoint(d, dataArr, liuChengData)
+        }
+        if (noMergeArr.length !== 0) {
+          noMergeArr.forEach((val: any) => {
+            let d = {
+              ...endPoint,
+              date: endPoint.date,
+              childLine: [val],
+            };
+            this.addFormatLiuChengData(d, liuChengData)
+            this.formatDataPoint(d, dataArr, liuChengData)
+          })
+        }
+        if (arr.length === 0 && noMergeArr.length === 0) {
+          let d = {
+            ...endPoint,
+            date: endPoint.date,
+            childLine: [],
+          };
+          this.addFormatLiuChengData(d, liuChengData)
+        }
+      })
+    }
+  }
+
+  addFormatLiuChengData(d: any, liuChengData:any) {
+    let obj = liuChengData.find((v: any) => v.date === d.date && d.childLine.join(',') === v.childLine.join(','));
+    if (!obj) {
+      liuChengData.push(d);
+    }
+  }
   //绘制
   drawLiucheng() {
     let liuchengData1 = this.getLiuchengData()
@@ -498,7 +709,6 @@ class DisplayUtil {
     this.setDateSub();
     this.formataLines();
     this.formatData();
-    // this.addLineLevel();
     this.graph.getModel().beginUpdate()
     this.addAllEdge();
     this.addPointCell();
@@ -531,35 +741,36 @@ class DisplayUtil {
         }
       })
     })
+    return;
 
-    // const self = this;
-    // const container = this.graph.container;
-    // let changeCell = null;
-    // window.mxEvent.addGestureListeners(container,
-    //   window.mxUtils.bind(this.graph.view, function (evt:any) {
-    //     let pt = window.mxUtils.convertPoint(container,
-    //       window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
-    //     let cell = self.graph.getCellAt(pt.x, pt.y);
-    //     //@ts-ignore
-    //     let state = this.getState(cell);
-    //     console.log(cell);
-    //     // if (state != null) {
-    //     //   self.graph.fireMouseEvent(window.mxEvent.MOUSE_DOWN,
-    //     //     new mxMouseEvent(evt, state));
-    //     // }
-    //     // else if (this.isContainerEvent(evt) &&
-    //     //   ((!mxClient.IS_IE &&
-    //     //       !mxClient.IS_GC && !mxClient.IS_OP && !mxClient.IS_SF) ||
-    //     //     !this.isScrollEvent(evt))) {
-    //     //   graph.fireMouseEvent(window.mxEvent.MOUSE_DOWN,
-    //     //     new mxMouseEvent(evt));
-    //     // }
-    //   }),
-    //   window.mxUtils.bind(this, function (evt:any) {
-    //     let pt = window.mxUtils.convertPoint(container,
-    //       window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
-    //
-    //   }),
+    const self = this;
+    const container = this.graph.container;
+    let changeCell = null;
+    window.mxEvent.addGestureListeners(container,
+      window.mxUtils.bind(this.graph.view, function (evt:any) {
+        let pt = window.mxUtils.convertPoint(container,
+          window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
+        let cell = self.graph.getCellAt(pt.x, pt.y);
+        //@ts-ignore
+        let state = this.getState(cell);
+        console.log(cell);
+        // if (state != null) {
+        //   self.graph.fireMouseEvent(window.mxEvent.MOUSE_DOWN,
+        //     new mxMouseEvent(evt, state));
+        // }
+        // else if (this.isContainerEvent(evt) &&
+        //   ((!mxClient.IS_IE &&
+        //       !mxClient.IS_GC && !mxClient.IS_OP && !mxClient.IS_SF) ||
+        //     !this.isScrollEvent(evt))) {
+        //   graph.fireMouseEvent(window.mxEvent.MOUSE_DOWN,
+        //     new mxMouseEvent(evt));
+        // }
+      }),
+      window.mxUtils.bind(this, function (evt:any) {
+        let pt = window.mxUtils.convertPoint(container,
+          window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
+
+      }),
       // window.mxUtils.bind(this, function (evt) {
       //   let pt = window.mxUtils.convertPoint(graph.container,
       //     window.mxEvent.getClientX(evt), window.mxEvent.getClientY(evt));
@@ -574,7 +785,7 @@ class DisplayUtil {
       //       new mxMouseEvent(evt));
       //   }
       // })
-    // )
+    );
   }
 
   //设置最小时间差
@@ -593,14 +804,9 @@ class DisplayUtil {
     this.liuchengData.forEach(v => {
       let sDate = v.date;
       v.lines?.forEach(val => {
-        let eDate;
-        if(val.date){
-          eDate = val.date;
-        }else{
-          let toObj = this.liuchengData.find(l => l.id === val.toId);
-          eDate = toObj?.date;
-        }
-        // let level = toObj?.level || 0;
+        let toObj = this.liuchengData.find(l => l.id === val.toId);
+        let level = toObj?.level || 0;
+        let eDate = toObj?.date;
         let len = -1;
         if (sDate && eDate) {
           len = this.getDateDaySub(sDate, eDate);
@@ -616,112 +822,58 @@ class DisplayUtil {
     })
     this.linesArr = lines;
     let canAddSubLine = this.linesArr.filter((v: any) => v.lineLen != 0 && v.lineLen < this.dateMinSub);
-    // let canAddSubLineDate = canAddSubLine.map((v:any) => v.sDate + '-' + v.eDate + ', ' + v.id + '-' + v.toId);
+    let canAddSubLineDate = canAddSubLine.map((v:any) => v.sDate + '-' + v.eDate + ', ' + v.id + '-' + v.toId);
     this.needAddSubDate = [...new Set(canAddSubLine.map((v: any) => v.eDate) as string[])];
-    this.linesArr.sort((v1:any, v2:any) => {
-      if (Date.parse(v1.eDate) > Date.parse(v2.eDate)) {
-        return 1;
-      } else {
-        return -1;
-      }
-    })
-    this.linesArr.sort((v1:any, v2:any) => {
-      if (Date.parse(v1.sDate) > Date.parse(v2.sDate)) {
-        return 1;
-      } else if (v1.sDate === v2.sDate) {
-        return 0;
-      }else{
-        return -1;
-      }
-    })
   }
 
   //格式化数据
   formatData() {
     this.needUpLevelData = [];
-    this.pointLevelObj = {};
     this.liuchengData.forEach(v => {
       v.len = this.getDateDaySub(v.date, this.startDate);
       this.changePointLeval(v.id)
     })
     this.needUpLevelData.reverse();
-    console.log(this.needUpLevelData);
     this.needUpLevelData.forEach((v: any) => {
       this.upPrevLeval(v.id, v.level, v.toId);
     })
-    // this.changePointYSort()
-    // this.addMoreStartPoint();
-    // this.changeMoreStart();
-  }
-
-  addLineLevel(){
-
-    let addLineArr:any = [];
-    this.linesArr.forEach((val: any) => {
-      if(val.taskName === '-1'){
-        return;
+    this.liuchengData.forEach(v => {
+      let level = this.pointLevelObj[v.id] || 0;
+      let lineArr = this.linesArr.filter((val: any) => (val.toId === v.id));
+      if (lineArr.length > 1) {
+        let parentLevel = lineArr.map((val: any) => this.pointLevelObj[val.id] || 0)
+        if (!parentLevel.includes(0)) {
+          if (parentLevel[0] > 0) {
+            this.pointLevelObj[v.id] = Math.min(...parentLevel);
+          } else {
+            this.pointLevelObj[v.id] = Math.max(...parentLevel);
+          }
+        }
       }
-      let lineBiaoshi = `${val.id}-${val.toId}`;
-      let objStart = this.liuchengData.find((v => v.id === val.id));
-      let objEnd = this.liuchengData.find((v => v.id === val.toId));
-      let objStartLines = objStart?.lines;
-      if(objStartLines && objStartLines.length > 1){
-        console.log(val.id, val.toId, objStart);
-        console.log(this.pointLevelObj[val.id], this.pointLevelObj[val.toId]);
-      }
-
     })
+    this.changePointXSort();
+    this.changeMoreStart();
   }
 
-  addMoreStartPoint(){
-    let startPoint:LiuChengData | undefined = this.liuchengData.find((d:any) => d.id === 0);
-    if(startPoint){
-      let lines =  startPoint?.lines || [];
-      let toId = lines[0].toId;
-      let startLinesPoint:LiuChengData = this.liuchengData.find((d:any) => d.id === toId) || {
-        date: '',
-        id: 1,
-        len: 1,
-        lines:[],
-        level: 0,
-      };
-      let startLines = startLinesPoint?.lines;
-      let startPoints:any = [];
-      startLines?.forEach((l:any) => {
-        let id = this.liuchengData.length;
-        let o = {
-          date: startLinesPoint.date,
-          id: id,
-          len: startLinesPoint.len,
-          level: l.level,
-          lines: [
-            l
-          ]
-        }
-        startPoints.push(o)
-        this.liuchengData.push(o)
-        let toObj = this.liuchengData.find((d:LiuChengData) => d.id === l.toId);
-        this.pointLevelObj[id] = this.pointLevelObj[toObj.id] || 0;
-        let sDate = startLinesPoint.date;
-        let eDate = toObj?.date;
-        let len = -1;
-        if (sDate && eDate) {
-          len = this.getDateDaySub(sDate, eDate);
-        }
-        this.linesArr.unshift({
-          ...l,
-          id: id,
-          lineLen: len,
-          sDate: sDate,
-          eDate: eDate,
-        })
-      })
-      this.liuchengData.splice(1, 1);
-      this.linesArr = this.linesArr.filter((l:any) => l.id !== 1);
-
+  //当有多个起点时
+  changeMoreStart(){
+    if(this.liuchengData[0] && this.liuchengData[0].id === 0){
       let resultStart = this.resultDate.filter((r: any) => !r.parentId);
       let resultStartTaskNames = resultStart.map((r:any) => {
         return r.taskName
+      })
+      let sObj:LiuChengData = this.liuchengData[0];
+      let sLines = sObj?.lines || [];
+      let sId = sLines[0]?.toId;
+      let startPoint:LiuChengData | undefined = this.liuchengData.find((l:any) => l.id === sId);
+      let startPoints:any = [];
+      let lines =  startPoint?.lines;
+      lines?.forEach((l:any) => {
+        if(l.taskName !== '-1' && resultStartTaskNames.includes(l.taskName)){
+          startPoints.push(startPoint)
+        }else{
+          startPoints.push(this.getFirstStartPoint(l.toId, resultStartTaskNames));
+        }
       })
       startPoints.sort((v1:any, v2:any) => {
         let i1 = resultStartTaskNames.findIndex((v:any) => v === v1.lines[0].taskName);
@@ -740,40 +892,18 @@ class DisplayUtil {
         let allPointId = this.getAllNextPointId(s);
         if(i !== 0){
           let min = Math.min(...allPointId.map((id:number) => this.pointLevelObj[id]));
-          if(min <= prevMax){
-            let sub = (prevMax - min ) + 1 ;
-            allPointId.forEach((id:number) => {
-              if(!changePointArr.includes(id)){
-                this.pointLevelObj[id] = this.pointLevelObj[id] + sub;
-              }
-            })
-          }
+          let sub = prevMax;
+          allPointId.forEach((id:number) => {
+            if(!changePointArr.includes(id)){
+              let level = this.pointLevelObj[id] + sub;
+              this.pointLevelObj[id] = level;
+            }
+          })
         }
         changePointArr.push(...allPointId)
         prevMax = Math.max(...allPointId.map((id:number) => this.pointLevelObj[id]));
       })
-    }
-  }
 
-  //当有多个起点时
-  changeMoreStart(){
-    let startPoint:LiuChengData | undefined = this.liuchengData.find((d:any) => d.id === 0);
-    if(startPoint) {
-      let lines0 = startPoint?.lines || [];
-      let toId = lines0[0].toId;
-      let startLinesPoint: LiuChengData = this.liuchengData.find((d: any) => d.id === toId) || {
-        date: '',
-        id: 1,
-        len: 1,
-        lines: [],
-        level: 0,
-      };
-      let startPoints:any = [];
-      let lines =  startLinesPoint?.lines;
-
-      lines?.forEach((l:any) => {
-        startPoints.push(this.getFirstStartPoint(l.toId, resultStartTaskNames));
-      })
     }
   }
 
@@ -809,7 +939,7 @@ class DisplayUtil {
   }
 
   //处理在同一竖线进行
-  changePointYSort(){
+  changePointXSort(){
     let xDateObj:any = {};
     this.liuchengData.forEach((data:LiuChengData) => {
       if(xDateObj[data.date]){
@@ -853,27 +983,12 @@ class DisplayUtil {
             l = max - 1;
           }
           if(max - min === 1){
-            // let chanegId = lines.filter((id:any) => this.pointLevelObj[id] === max);
+            let chanegId = lines.filter((id:any) => this.pointLevelObj[id] === max);
             this.pointLevelObj[key] = max + 1;
             l = max;
           }
           changeLine.push(...lines.map((v:any) => `${v}-${key}`))
-
-          if(l !== this.pointLevelObj[key]){
-            this.pointLevelObj[key] = l;
-            let dArr = this.liuchengData.filter((d:any) => {
-              let lineIds = d.lines.map((l:any) => l.toId);
-              let isHas = false;
-              lineIds.forEach((id:number) => {
-                if(lines.includes(id)){
-                  isHas = true
-                }
-              })
-              return isHas;
-            })
-            // this.upPrevLeval(v.id, v.level, v.toId);
-            console.log(dArr);
-          }
+          this.pointLevelObj[key] = l;
         }
       }
       for(let key in lineObj){
@@ -893,16 +1008,16 @@ class DisplayUtil {
         }
         if(max - min === 1){
           let chanegId = lines.filter((id:any) => this.pointLevelObj[id] === max);
-          // this.pointLevelObj[chanegId] = max + 1;
+          this.pointLevelObj[chanegId] = max + 1;
           l = max;
         }
-        // this.pointLevelObj[key] = l;
+        this.pointLevelObj[key] = l;
       }
     })
   }
 
   // 计算需要修改层级的点位
-  changePointLeval(id: number, change = false) {
+  changePointLeval(id: number) {
     let idLevel = this.pointLevelObj[id] || 0;
     let lineArr = this.linesArr.filter((val: any) => (val.id === id));
     lineArr.sort((v: any) => {
@@ -932,13 +1047,12 @@ class DisplayUtil {
         if (i !== 0) {
           if (level < 0) {
             level--;
+
           } else {
             level++;
           }
         }
-        if (change && this.pointLevelObj[v.toId] !== undefined) {
-          this.pointLevelObj[v.toId] = level;
-        }else if (this.pointLevelObj[v.toId] === undefined) {
+        if (this.pointLevelObj[v.toId] === undefined) {
           this.pointLevelObj[v.toId] = level;
         }
       } else {
@@ -946,27 +1060,7 @@ class DisplayUtil {
         if (i % 2 === 0 && level !== 0) {
           level *= -1;
         }
-        let oldLevel = this.pointLevelObj[v.toId];
-        if(oldLevel !== 0)
-          this.pointLevelObj[v.toId] = level;
-        if (oldLevel !== undefined && level !== 0) {
-          let arr = this.liuchengData.filter((d:any) => (d.lines.map((l:any) => l.toId)).includes(v.toId) && d.id !== id)
-          arr.forEach((a:any) => {
-            let lines = a.lines;
-            let levelLinshi = level;
-            lines.forEach((l:any) => {
-              if(l.toId !== v.toId){
-                if(Math.abs(this.pointLevelObj[l.toId]) > Math.abs(oldLevel)){
-                  levelLinshi = this.getUpPointLevel(level);
-                  this.pointLevelObj[l.toId] = levelLinshi;
-                }
-              }
-            })
-          })
-          this.changePointLeval(v.toId, true);
-        }else{
-
-        }
+        this.pointLevelObj[v.toId] = level;
         if (idLevel === 0 && lineArr.length > 1 && level !== 0) {
           this.needUpLevelData.push({
             id: id,
@@ -992,60 +1086,30 @@ class DisplayUtil {
     if (parentPoint.length !== 0) {
       let setObj = this.liuchengData.find((val => val.id === setId));
       let nowTime = Date.parse(setObj?.date || '');
-      let changeIds:number[] = [];
       parentPoint.forEach((v: any) => {
         let obj = this.liuchengData.find((val => val.id === v));
         let lines = obj?.lines;
         lines?.forEach((line: any) => {
           let l = this.pointLevelObj[line.toId] || 0;
           if (l >= level && l !== 0) {
-            console.log('-------------------------')
-            console.log(id, setId, v,line.toId);
             let arr: any = [];
             this.findLastZeroPoint(line.toId, arr);
             let ids = arr.map((val: any) => val.toId);
             ids = [...new Set(ids)]
-            console.log(ids);
             let timeIds = this.getDateById(ids);
             let lastTime = Math.max(...timeIds.map(v => v.time));
-            if (lastTime >= nowTime) {
+            if (lastTime > nowTime) {
               let allChangePoint: any = [line];
               this.getAllToZeorPoints(line.toId, allChangePoint);
               let allChangeIds = [...new Set(allChangePoint.map((p: any) => p.toId))];
-              console.log(allChangeIds);
-              let minIdsLevel = allChangeIds.map((i:any) => this.pointLevelObj[i])
-              let upLevel = 0;
               allChangeIds.forEach((id: any) => {
-                if (id !== setId && !changeIds.includes(id)) {
+                if (id !== setId) {
                   let idObj = this.liuchengData.find((val => val.id === id));
                   let idChilds = idObj?.lines?.find((val: any) => val.toId === setId)
                   let setIdChilds = setObj?.lines?.find((val: any) => val.toId === id)
-                  if ((!idChilds || idObj?.date === setObj?.date) && !setIdChilds){
-                    changeIds.push(id);
-                    let oldLevel = this.pointLevelObj[id];
-                    let sTime = Date.parse(obj?.date || '');
-                    let level1 = this.getUpPointLevel(this.pointLevelObj[id]) + upLevel;
-                    let getLevel = (level:number) => {
-                      let hasLevelObj = lines?.find((d:any) => this.pointLevelObj[d.toId] === level);
-                      if(hasLevelObj){
-                        level1 = this.getUpPointLevel(level);
-                        if(level <= 0){
-                          upLevel--;
-                        }else{
-                          upLevel++;
-                        }
-
-                        getLevel(level1);
-                      }
-                    }
-                    let lineIds = lines?.map((l:any) => l.toId);
-                    if(lineIds?.includes(id)){
-                      getLevel(level1);
-                    }
-                    // this.upTopLevelPoint(sTime, lastTime, oldLevel, id)
-                    console.log(id);
-                    this.pointLevelObj[id] = level1
-                  }
+                  let idDate = Date.parse(idObj?.date || '');
+                  if ((!idChilds || idObj?.date === setObj?.date) && (!setIdChilds && (idDate <= nowTime || this.pointLevelObj[id] === this.pointLevelObj[setId])))
+                    this.pointLevelObj[id] = this.getUpPointLevel(this.pointLevelObj[id]);
                 }
               })
             }
@@ -1055,34 +1119,18 @@ class DisplayUtil {
     }
   }
 
-  upTopLevelPoint(sDate:number, eDate:number, level:number, id:number){
-    let needAddArr = this.liuchengData.find((d:LiuChengData) => {
-      let time = Date.parse(d.date);
-      let l:number = this.pointLevelObj[d.id];
-      if(time > sDate && time < eDate && Math.abs(l) <= Math.abs(level)){
-        console.log(l, level)
-        return true
-      }else{
-        return false
-      }
-    })
-    if(needAddArr){
-      console.log(id, needAddArr);
-    }
-
-  }
-
   //根据传入的ID数组获取 id的时间的id数组
   getDateById(ids: number[]) {
     if (!Array.isArray(ids)) {
       ids = [ids];
     }
-    return this.liuchengData.filter(v => ids.includes(v.id)).map(v => {
+    let arrs = this.liuchengData.filter(v => ids.includes(v.id)).map(v => {
       return {
         time: Date.parse(v.date),
         id: v.id
       }
     });
+    return arrs;
   }
 
   // 根据点位ID获取需要修改的点位
@@ -1144,10 +1192,13 @@ class DisplayUtil {
   // 添加点位
   addPointCell() {
     let cells: any = [];
+    let xml = [];
+    let lines = [];
     this.liuchengData.forEach(v => {
       if(v.id === 0){
         return;
       }
+      let needNum = this.needAddSubDateNum(v.date);
       let x = this.getDateXLen(v.date);
       if (v.id !== 1) {
         x = x - this.pointSize / 2;
@@ -1170,6 +1221,22 @@ class DisplayUtil {
   // 添加线
   addLineCell() {
     let addLineArr:any = [];
+    this.linesArr.sort((v1:any, v2:any) => {
+      if (Date.parse(v1.eDate) > Date.parse(v2.eDate)) {
+        return 1;
+      } else {
+        return -1;
+      }
+    })
+    this.linesArr.sort((v1:any, v2:any) => {
+      if (Date.parse(v1.sDate) > Date.parse(v2.sDate)) {
+        return 1;
+      } else if (v1.sDate === v2.sDate) {
+        return 0;
+      }else{
+        return -1;
+      }
+    })
     this.linesArr.forEach((val: any) => {
       if(val.taskName === '-1'){
         return;
@@ -1214,11 +1281,9 @@ class DisplayUtil {
         entryY = 0.5;
       }
       let styleStr =
-        `movable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};exitX=${exitX};exitY=${exitY};exitDx=0;exitDy=0;entryX=${entryX};entryY=${entryY};entryDx=0;entryDy=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
-      if (val.type === 1 || val.type === 2 || (val.lineId && val.lineId.includes('l-'))) {
+        `jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};exitX=${exitX};exitY=${exitY};exitDx=0;exitDy=0;entryX=${entryX};entryY=${entryY};entryDx=0;entryDy=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
+      if (val.type === 1 || val.type === 2 || val.lineId.includes('l-')) {
         styleStr += 'dashed=1;';
-      }else{
-        styleStr += 'jumpStyle=arc;';
       }
       let point: any = null;
       if (((y1 >= 0 && y2 >= 0) || (y1 <= 0 && y2 <= 0)) && Math.abs(y1) < Math.abs(y2)) {
@@ -1240,8 +1305,6 @@ class DisplayUtil {
           ]
         }
       }
-      let objStart = this.liuchengData.find((v => v.id === val.id));
-      let objEnd = this.liuchengData.find((v => v.id === val.toId));
       if (x1 === x2) {
         point = null;
         styleStr += 'spacingRight=60;';
@@ -1258,8 +1321,8 @@ class DisplayUtil {
               levelPoint.push(key);
             }
           }
-          let obj1 = objStart;
-          let obj2 = objEnd;
+          let obj1 = this.liuchengData.find((v => v.id === val.id));
+          let obj2 = this.liuchengData.find((v => v.id === val.toId));
           let time1 = Date.parse(obj1?.date || '');
           let time2 = Date.parse(obj2?.date || '');
           if (!isNaN(time1) && !isNaN(time2)) {
@@ -1268,6 +1331,7 @@ class DisplayUtil {
               return levelPoint.includes(v.id + '') && t > time1 && t < time2
             }));
             if (points.length !== 0) {
+              let y = this.ySubLength;
               point = [
                 [x1 + (exitX * this.pointSize), y2 + (entryY * this.pointSize) + this.ySubLength],
                 // [x2 - (entryX * this.pointSize), y1 + (exitY * this.pointSize) + this.ySubLength]
@@ -1279,10 +1343,7 @@ class DisplayUtil {
       styleStr += 'endArrow=block;';
       let points:any = null;
       if (val.type !== 3) {
-        styleStr += 'rounded=0;edgeStyle=orthogonalEdgeStyle;';
-        // if (!(val.type === 1 || val.type === 2 || (val.lineId && val.lineId.includes('l-')))) {
-        //   styleStr += 'jumpStyle=arc;';
-        // }
+        styleStr += 'rounded=0;edgeStyle=orthogonalEdgeStyle;movable=0;';
         if (point) {
           points = [];
           point.forEach((v: any) => {
@@ -1290,8 +1351,8 @@ class DisplayUtil {
           })
         }
       } else {
-        styleStr += 'rounded=0;';
-        // styleStr += 'curved=1;';
+        // styleStr += 'rounded=0;';
+        styleStr += 'curved=1;';
         let type3Line: any = [];
         let bolangxian: any = null;
         let x = this.getDateXLen(val.date) + this.pointSize;
@@ -1311,7 +1372,7 @@ class DisplayUtil {
                 new window.mxPoint(x, lastY),
                 'bolangxian',
                 new window.mxPoint(pointE[0], lastY),
-                // new window.mxPoint(pointE[0], lastY + d * 10),
+                new window.mxPoint(pointE[0], lastY + d * 10),
                 new window.mxPoint(...pointE),
               ]
             } else {
@@ -1319,13 +1380,15 @@ class DisplayUtil {
               let d = subY === 0 ? 0 : subY / Math.abs(subY);
               type3Line = [
                 new window.mxPoint(...pointS),
-                // new window.mxPoint(point[0][0], point[0][1]),
-                // new window.mxPoint(point[0][0], point[0][1] - d * 10),
-                // new window.mxPoint(point[0][0] + 1, point[0][1]),
+                new window.mxPoint(point[0][0], point[0][1]),
+                new window.mxPoint(point[0][0], point[0][1] - d * 10),
+                new window.mxPoint(point[0][0], point[0][1]),
+                new window.mxPoint(point[0][0] + 5, point[0][1]),
+
                 new window.mxPoint(x, lastY),
                 'bolangxian',
                 new window.mxPoint(pointE[0], lastY),
-                // new window.mxPoint(pointE[0], lastY - d * 10),
+                new window.mxPoint(pointE[0], lastY - d * 10),
                 new window.mxPoint(...pointE),
               ]
             }
@@ -1336,9 +1399,9 @@ class DisplayUtil {
           } else {
             type3Line = [
               new window.mxPoint(...pointS),
-              // new window.mxPoint(point[0][0], point[0][1] - d * 10),
+              new window.mxPoint(point[0][0], point[0][1] - d * 10),
               new window.mxPoint(...point[0]),
-              // new window.mxPoint(point[0][0] + 1, point[0][1]),
+              new window.mxPoint(point[0][0] + 5, point[0][1]),
               new window.mxPoint(x, lastY),
               'bolangxian',
             ];
@@ -1365,55 +1428,37 @@ class DisplayUtil {
         let linpoints = [];
         if(bolangxian){
           let index = 0;
-          let bx1 = bolangxian[0][0];
-          let bx2 = bolangxian[1][0] - 6;
-          let sub = Math.abs(bolangxian[0][0] - bolangxian[1][0]);
-          if(sub !== 0){
-            // linpoints.push(new window.mxPoint(bx1, bolangxian[0][1]))
-            let s = this.bolangxianSubLength;
-            let sY = this.bolangxianSubLength / 2;
-            if(Math.abs(bolangxian[0][0] - bolangxian[1][0]) <= this.dateSubLength){
-              s = s / 5;
-              sY = sY / 2
+          let lastPoint = null;
+          let bx1 = bolangxian[0][0] + this.bolangxianSubLength;
+          let bx2 = bolangxian[1][0] - this.bolangxianSubLength - 6;
+          linpoints.push(new window.mxPoint(bx1, bolangxian[0][1]))
+
+          for (let i = bx1 + this.bolangxianSubLength; i < bx2; i = i + this.bolangxianSubLength) {
+            let x = i + this.bolangxianSubLength;
+            if (index === 0) {
+              x = i + this.bolangxianSubLength;
             }
-            for (let i = bx1 + s; i < bx2; i = i + s) {
-              let x = i + s;
-              if (index === 0) {
-                x = i + s;
-              }
-              let y = bolangxian[0][1] + sY * (index % 2 === 0 ? -1 : 1);
-              index++;
-              if(x < bx2 - 3)
-                linpoints.push(new window.mxPoint(x, y));
-            }
-            if(sub <= this.dateSubLength){
-              linpoints.push(new window.mxPoint(bx2-2, bolangxian[0][1]))
-              linpoints.push(new window.mxPoint(bx2, bolangxian[0][1]))
-            }else{
-              // let lastP = linpoints.pop();
-              // linpoints.push(new window.mxPoint(lastP.x, bolangxian[0][1]))
-            }
-            // linpoints.push(new window.mxPoint(bolangxian[1][0] - 1, bolangxian[0][1]))
-            linpoints.push(new window.mxPoint(bolangxian[1][0], bolangxian[0][1]))
-            let bolangXianIndex = type3Line.findIndex((v:any) => v === 'bolangxian');
-            type3Line.splice(bolangXianIndex, 1, ...linpoints);
+            let y = bolangxian[0][1] + this.bolangxianSubLength / 2 * (index % 2 === 0 ? -1 : 1);
+            index++;
+            linpoints.push(new window.mxPoint(x, y));
           }
+          if(Math.abs(bolangxian[0][0] - bolangxian[1][0]) > this.dateSubLength){
+            linpoints.push(new window.mxPoint(bx2, bolangxian[0][1]))
+            linpoints.push(new window.mxPoint(bolangxian[1][0], bolangxian[0][1]))
+          }else{
+            let lastP = linpoints.pop();
+            linpoints.push(new window.mxPoint(lastP.x, bolangxian[0][1]))
+          }
+          let bolangXianIndex = type3Line.findIndex((v:any) => v === 'bolangxian');
+          type3Line.splice(bolangXianIndex, 1, ...linpoints);
         }
         points = type3Line;
       }
-      let lineValue = `${val.taskName || val.lineId || ''}`;
-      let lineLen = val.lineLen;
-      if(val.type === 1){
-        lineValue = '';
-        if(val.taskName !== 'FS'){
-          lineLen = '';
-        }
-      }
-      let e1 = this.graph.insertEdge(this.dataCellObj[val.id], null, lineValue, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr);
+      let e1 = this.graph.insertEdge(this.dataCellObj[val.id], null, `${val.taskName || val.lineId || ''}`, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr);
       e1.geometry.points = points
       addLineArr.push(lineBiaoshi);
       let lenStyle = `edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=${this.fontSize};labelBackgroundColor=none;`
-      this.graph.insertVertex(e1, null, lineLen, 0, -20, 0, 0, lenStyle, true);
+      this.graph.insertVertex(e1, null, val.lineLen, 0, -20, 0, 0, lenStyle, true);
     })
   }
 
@@ -1452,6 +1497,7 @@ class DisplayUtil {
     let minX = this.leftTopPoint[0];
     let maxX = this.rightBottomPoint[0];
     let minY = this.leftTopPoint[1];
+    let maxY = this.rightBottomPoint[1];
     let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeWidth=${this.strokeWidth};fontSize=${this.fontSize};labelBackgroundColor=none;`;
     //绘制标尺容器
     this.graph.insertVertex(this.parentCell, null, '日', minX, minY - this.biaochiHeight, this.mainPadding, this.biaochiHeight, styleStr);
@@ -1497,6 +1543,7 @@ class DisplayUtil {
     //绘制年月标尺
     let monthArr = [];
     for (let i = new Date(this.startDate); i <= new Date(endDate);) {
+      let biaoChiLen = 7;
       let m = i.getMonth() + 1;
       i.setMonth(m);
       i.setDate(1);
@@ -1552,6 +1599,7 @@ class DisplayUtil {
   addBottomCon() {
     let minX = this.leftTopPoint[0];
     let maxX = this.rightBottomPoint[0];
+    let minY = this.leftTopPoint[1];
     let maxY = this.rightBottomPoint[1];
     let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
     let bottomHei = 200;
@@ -1647,20 +1695,23 @@ class DisplayUtil {
   getDateXLen(d: string, sD?: string) {
     let needNum = this.needAddSubDateNum(d);
     sD = sD || this.startDate;
-    let len = this.getDateDaySub(sD, d)
-    return (this.dateSubLength) * ((len / this.dateMinSub) + needNum);
+    let len = this.getDateDaySub(this.startDate, d)
+    let x = (this.dateSubLength) * ((len / this.dateMinSub) + needNum);
+    return x;
   }
 
   addLineEdge(startPoint: number[], endPoint: number[], text?:string, styleStr?: string) {
     styleStr = styleStr ||
       `movable=0;deletable=0;resizable=0;connectable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=#000000;rounded=0;endArrow=none;`;
+    let sKey = `point${startPoint[0]}-${startPoint[1]}`;
+    let eKey = `point${endPoint[0]}-${endPoint[1]}`;
     let sV = this.createPointVertex(startPoint[0], startPoint[1]);
     let eV = this.createPointVertex(endPoint[0], endPoint[1]);
     return this.graph.insertEdge(this.parentCell, null, text || '', sV, eV, styleStr);
   }
 
   createPointVertex(x: number, y: number) {
-    let point;
+    let point = null
     let sKey = `point${x}-${y}`;
     if (this.linePointVertex[sKey]) {
       point = this.linePointVertex[sKey];
@@ -1704,7 +1755,7 @@ class DisplayUtil {
 
   formatTime(time:any, type?:string) {
     let date = new Date(time);
-    let dataStr;
+    let dataStr = "";
     let y:string = date.getFullYear().toString(),
       m:string = date.getMonth() < 9 ? "0" + (date.getMonth() + 1) : date.getMonth() + 1 + '',
       d:string = date.getDate() < 10 ? "0" + date.getDate() : date.getDate() + '',
@@ -1748,7 +1799,6 @@ class DisplayUtil {
       this.rightBottomPoint = [];
       this.linePointVertex = {};
       this.resultDate = [];
-      this.dateMinSub = 1;
     }
   }
 }

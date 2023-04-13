@@ -431,8 +431,8 @@ export default [{
   "taskName": "抹灰",
   "id": "60231e32549743bd88a7c2786e9150d3",
   "daySum": -1,
-  "planStartDate": 1544803200000,
-  "planEndDate": 1544976000000,
+  "planStartDate": 1544803200000,  //'2018-12-15 00:00:00'
+  "planEndDate": 1544976000000,//'2018-12-17 00:00:00'
   "createDate": 1680060744000,
   "direction": "2"
 }, {
@@ -454,8 +454,8 @@ export default [{
   "taskName": "卫生间清理",
   "id": "95fce0bb2506499ebf1f3f1b4a90e76d",
   "daySum": -1,
-  "planStartDate": 1544976000000,
-  "planEndDate": 1544976000000,
+  "planStartDate": 1544976000000,//'2018-12-17 00:00:00'
+  "planEndDate": 1544976000000,//'2018-12-17 00:00:00'
   "createDate": 1680060744000,
   "direction": "2"
 }, {
