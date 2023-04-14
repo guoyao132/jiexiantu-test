@@ -353,19 +353,12 @@ class DisplayUtil {
       keyArr.forEach((key: string) => {
         let value = pointType[key];
         if(!key.includes(',')){
-          console.log(JSON.parse(JSON.stringify(ep.childLine)));
           ep.childLine = [];
           let childLineLin:any = [];
           value.forEach((v:any) => {
             let index = sPointArr.findIndex((s:any) => s.serialNumber === v);
             if(index !== -1){
               let a = sPointArr.find((s: any) => s.serialNumber === v);
-              if(a.parentIds === '15'){
-                console.log('--------------------')
-                console.log(a, ep);
-                console.log(key, value);
-                console.log('--------------------')
-              }
               childLineLin.push(sPointArr[index].childLine[0])
               sPointArr.splice(index, 1);
             }
@@ -1331,7 +1324,6 @@ class DisplayUtil {
 
   // 添加点位
   addPointCell() {
-    console.log(this.pointLevelObj);
     let cells: any = [];
     this.liuchengData.forEach(v => {
       if(v.id === 0){
