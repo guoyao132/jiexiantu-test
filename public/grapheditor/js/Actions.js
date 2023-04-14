@@ -64,7 +64,7 @@ Actions.prototype.init = function()
 	// 	});
 	// }).isEnabled = isGraphEnabled;
 	this.addAction('save', function() {
-		function successSave(data) {
+		let successSave = (data) => {
 			// if (data.status === 'SUCCEED') {
 			// 	mxUtils.alert('保存成功')
 			// } else {
@@ -81,19 +81,17 @@ Actions.prototype.init = function()
 				const svgXml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
 					'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + mxUtils.getXml(graph.getSvg(null, null, null, null, null,
 						null, null, null, null, null))
-				if (false) {
-					// api.editGraph(mxUtils.getPrettyXml(node), newValue.trim(), svgXml, successSave)
-					console.log(mxUtils.getPrettyXml(node));
-					console.log(newValue.trim());
-					console.log(svgXml);
-					successSave();
-				} else {
-					// api.addGraphLin(mxUtils.getPrettyXml(node), newValue.trim(), svgXml, successSave)
-					console.log(mxUtils.getPrettyXml(node));
-					console.log(newValue.trim());
-					console.log(svgXml);
-					successSave();
-				}
+				console.log(svgXml);
+				ui.$get.saveScheduleGraph({
+					singleId: ui.$route.singleId,
+					graphType: 1,
+					moduleName: newValue.trim(),
+					moduleXml: mxUtils.getPrettyXml(node),
+					svgXml: svgXml,
+				}).then(resp => {
+					let result = resp.result;
+					console.log(result);
+				})
 			}
 		}), '名称', null);
 

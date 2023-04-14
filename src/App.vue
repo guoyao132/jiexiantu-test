@@ -4,22 +4,22 @@
 <script setup lang="ts">
 import {onMounted, computed, watch} from 'vue'
 import displayUtil from './assets/js/autoInit'
-import {useRoute} from 'vue-router'
+import {useRoute, useRouter} from 'vue-router'
 const route = useRoute();
+const router = useRouter();
 const query = computed(() => route.query)
-watch(query, (v:any) => {
+const init = async () => {
+  await router.isReady()
+  let v = query.value;
   if(v.data || v.singleId){
     displayUtil.init({
       data: v.data,
       singleId: v.singleId,
+      query,
     });
   }
-})
-onMounted(() => {
-  if(query.value.data){
-    displayUtil.init(query.value.data as string);
-  }
-})
+}
+init();
 </script>
 
 

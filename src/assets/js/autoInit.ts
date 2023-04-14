@@ -1,6 +1,6 @@
 import editorui from './graphInit';
 import {watch} from 'vue'
-import {getDiagramList} from '../../api'
+import {getDiagramList, getBySingleId} from '../../api'
 import data from './data'
 import data1 from './data1'
 import data2 from './data2'
@@ -8,6 +8,7 @@ import data3 from './data3'
 import data4 from './data4'
 import data5 from './data5'
 import dataOld from './data-1'
+import {toRaw} from 'vue'
 
 interface LiuChengLineData {
   toId: number,
@@ -62,8 +63,11 @@ class DisplayUtil {
   dateFormatType: string;       //日期格式
   resultDate: any;       //接口请求数据
   isInit: boolean;  //是否初始化
+  route: any;  //路由
 
   constructor() {
+    this.editorUi = null;
+    this.graph = null;
     this.isInit = false;
     this.biaochiHeight = 50;
     this.mainPadding = 250;
@@ -79,8 +83,6 @@ class DisplayUtil {
     this.dateBase = 50;
     this.colorLevalArr = ['#0080ff', '#ff0000', '#008080'];
     this.dateFormatType = 'y.m.d';
-    this.editorUi = null;
-    this.graph = null;
     this.parentCell = null;
     this.linesArr = [];
     this.dataCellObj = {};
@@ -109,19 +111,35 @@ class DisplayUtil {
     }
   }
   getData(singleId:string){
-    getDiagramList({
-      singleId: singleId,
-    }).then((resp:any) => {
+    getBySingleId({
+      singleId: singleId
+    }).then((resp: any) => {
       let result = resp.result || {};
-      let diagramList = result.diagramList;
-      diagramList.forEach((v:any) => {
-        v.planEndDateOld = v.planEndDate;
-        v.planEndDate = Date.parse(v.planEndDate + ' 00:00:00');
-        v.planStartDateOld = v.planStartDate;
-        v.planStartDate = Date.parse(v.planStartDate + ' 00:00:00');
-      })
-      this.resultDate = result.diagramList || [];
-      this.drawLiucheng();
+      let moduleXml = result.moduleXml;
+      if(moduleXml){
+        //更新线
+        let data = window.Graph.zapGremlins(moduleXml)
+        this.graph.getModel().beginUpdate()
+        this.editorUi.editor.setGraphXml(window.mxUtils.parseXml(data).documentElement);
+        this.graph.getModel().endUpdate()
+        this.graph.fit(10, false, 0, true,false, false);
+        this.addEvents();
+      }else{
+        getDiagramList({
+          singleId: singleId,
+        }).then((resp:any) => {
+          let result = resp.result || {};
+          let diagramList = result.diagramList;
+          diagramList.forEach((v:any) => {
+            v.planEndDateOld = v.planEndDate;
+            v.planEndDate = Date.parse(v.planEndDate + ' 00:00:00');
+            v.planStartDateOld = v.planStartDate;
+            v.planStartDate = Date.parse(v.planStartDate + ' 00:00:00');
+          })
+          this.resultDate = result.diagramList || [];
+          this.drawLiucheng();
+        })
+      }
     })
   }
   initFun(query:any){
@@ -129,6 +147,9 @@ class DisplayUtil {
     this.isInit = true;
     this.editorUi = editorui.value;
     this.graph = this.editorUi.editor.graph;
+
+    this.editorUi.$route = query.query.value;
+
     this.parentCell = this.graph.getDefaultParent();
     if(query.singleId){
       this.getData(query.singleId);
@@ -153,7 +174,7 @@ class DisplayUtil {
   getLiuchengData() {
     let addLineIndex = 0;
     let result = JSON.parse(JSON.stringify(this.resultDate));
-    let startPoint = result.filter((r: any) => !r.parentId);
+    let startPoint = result.filter((r: any) => !r.parentId && r.duration !== 0);
     if(startPoint.length > 1){
       let startTime = Math.min(...startPoint.map((s:any) => s.planStartDate));
       let s = {
@@ -183,6 +204,9 @@ class DisplayUtil {
       }
     })
     result.forEach((v: any) => {
+      if(!v.parentId && v.duration === 0){
+        return
+      }
       let parentId =  v.parentId ? v.parentId.replace('，', ',') : '';
       let parentIdsArr = parentId.split(',');
       let sDate = this.formatTime(v.planStartDate, this.dateFormatType);
@@ -329,11 +353,19 @@ class DisplayUtil {
       keyArr.forEach((key: string) => {
         let value = pointType[key];
         if(!key.includes(',')){
+          console.log(JSON.parse(JSON.stringify(ep.childLine)));
           ep.childLine = [];
           let childLineLin:any = [];
           value.forEach((v:any) => {
             let index = sPointArr.findIndex((s:any) => s.serialNumber === v);
             if(index !== -1){
+              let a = sPointArr.find((s: any) => s.serialNumber === v);
+              if(a.parentIds === '15'){
+                console.log('--------------------')
+                console.log(a, ep);
+                console.log(key, value);
+                console.log('--------------------')
+              }
               childLineLin.push(sPointArr[index].childLine[0])
               sPointArr.splice(index, 1);
             }
@@ -665,7 +697,6 @@ class DisplayUtil {
     this.needUpLevelData.forEach((v: any) => {
       this.upPrevLeval(v.id, v.level, v.toId);
     })
-    this.changePointYSort()
   }
 
   addLineLevel(){
@@ -698,7 +729,6 @@ class DisplayUtil {
     let hasLevel:any = [];
     let levelObjArr:any = [];
     let lineLevelObjNew:any = {};
-    let changeLeval:any = [];
     let parentLineUp = (v:number, value:any, is = false) => {
       if(hasLevel.includes(v)){
         let index = hasLevel.findIndex((l:any) => l === v);
@@ -713,25 +743,33 @@ class DisplayUtil {
           if(obj[0] < 0){
             d = -1;
           }
+          let valSmalLastTime = Math.min(...obj.slice(1).map((o:any) => o.eDate));
           let upV = obj[0] + (d * obj.length - 1);
-          value[0] = upV;
-          let changeObjArr = value.slice(1).map((l:any) => l.changeId);
-          changeLeval.push([value[0], value[0] + value.length - 2])
+          let valueLinshi = value;
+          let objLinshi = obj;
+          if(lastTime - startTime > valSmalLastTime - sDate){
+            valueLinshi = obj;
+            objLinshi = value;
+            upV = obj[0] + (d * value.length - 1);
+            obj[0] = upV;
+          }
+          valueLinshi[0] = upV;
+          let changeObjArr = valueLinshi.slice(1).map((l:any) => l.changeId);
           changeObjArr.forEach((ids:number[]) => {
             ids.forEach((id:number) => {
-              this.pointLevelObj[id] = this.getUpPointLevel(this.pointLevelObj[id], obj.length - 2);
+              this.pointLevelObj[id] = this.getUpPointLevel(this.pointLevelObj[id], objLinshi.length - 2);
             })
           })
-          let minL = value[0];
-          let maxL = value[0] + value.length - 2;
+          let minL = valueLinshi[0];
+          let maxL = valueLinshi[0] + valueLinshi.length - 2;
           if(hasLevel.includes(upV)){
             let valueNew = lineLevelObjValues.find((l: any) => l[0] === upV);
             let i = hasLevel.findIndex((l:any) => l === upV);
-            levelObjArr.splice(i, 1, [value]);
+            levelObjArr.splice(i, 1, [valueLinshi]);
             parentLineUp(upV, valueNew, true)
           }else{
             hasLevel.push(upV);
-            levelObjArr.push([value]);
+            levelObjArr.push([valueLinshi]);
           }
           let needAdd = lineLevelObjValues.filter((l: any) => l[0] > minL && l[0] <= maxL);
           let needAddLeval = maxL + 1;
@@ -772,10 +810,12 @@ class DisplayUtil {
     }
     this.lineLevelObj = lineLevelObjNew;
     this.addMoreStartPoint();
+
+    this.changePointYSort()
   }
 
   upTopLevelPoint(sDate:number, eDate:number, level:number, id:number, toId:number, lineObj:any, lineLevelObj:any){
-    let needAddArr = this.liuchengData.find((d:LiuChengData) => {
+    let needAddArr = this.liuchengData.filter((d:LiuChengData) => {
       let time = Date.parse(d.date);
       let l:number = this.pointLevelObj[d.id];
       if(time > sDate && time < eDate && l === level){
@@ -784,7 +824,8 @@ class DisplayUtil {
         return false
       }
     })
-    if(needAddArr) {
+    if(needAddArr.length > 0) {
+      let maxLeval = Math.max(...needAddArr.map((n:any) => this.pointLevelObj[n.id]));
       let lineBiaoshi = `${id}-${toId}`;
       let sub = 0;
       let startLeval = 1;
@@ -805,7 +846,7 @@ class DisplayUtil {
         ids = [...new Set(ids)]
         let timeIds = this.getDateById(ids);
         let lastTime = Math.max(...timeIds.map(v => v.time));
-        let isLevel = level === 0 ? l > level : l >= level;
+        let isLevel = level === 0 ? l > level : Math.abs(l) >= Math.abs(level);
         if (time <= eDate && isLevel && lastTime > sDate) {
           this.pointLevelObj[d.id] = this.getUpPointLevel(this.pointLevelObj[d.id]);
           changeId.push(d.id);
@@ -854,7 +895,7 @@ class DisplayUtil {
         startPoints.push(o)
         this.liuchengData.push(o)
         let toObj = this.liuchengData.find((d:LiuChengData) => d.id === l.toId);
-        this.pointLevelObj[id] = this.pointLevelObj[toObj.id] || 0;
+        this.pointLevelObj[id] = this.pointLevelObj[toObj?.id || 0] || 0;
         let sDate = startLinesPoint.date;
         let eDate = toObj?.date;
         let len = -1;
@@ -1290,6 +1331,7 @@ class DisplayUtil {
 
   // 添加点位
   addPointCell() {
+    console.log(this.pointLevelObj);
     let cells: any = [];
     this.liuchengData.forEach(v => {
       if(v.id === 0){
@@ -1435,7 +1477,6 @@ class DisplayUtil {
           point = [
             [x1 + (exitX * this.pointSize),  (entryY * this.pointSize) + this.ySubLength * startLeval],
           ];
-          console.log(point, val.taskName);
         }
       }
 
@@ -1528,7 +1569,7 @@ class DisplayUtil {
         let linpoints = [];
         if(bolangxian){
           let index = 0;
-          let bx1 = bolangxian[0][0];
+          let bx1 = bolangxian[0][0] + 3;
           let bx2 = bolangxian[1][0] - 6;
           let sub = Math.abs(bolangxian[0][0] - bolangxian[1][0]);
           if(sub !== 0){
@@ -1550,8 +1591,8 @@ class DisplayUtil {
                 linpoints.push(new window.mxPoint(x, y));
             }
             if(sub <= this.dateSubLength){
-              linpoints.push(new window.mxPoint(bx2-2, bolangxian[0][1]))
-              linpoints.push(new window.mxPoint(bx2, bolangxian[0][1]))
+              // linpoints.push(new window.mxPoint(bx2-2, bolangxian[0][1]))
+              // linpoints.push(new window.mxPoint(bx2, bolangxian[0][1]))
             }else{
               // let lastP = linpoints.pop();
               // linpoints.push(new window.mxPoint(lastP.x, bolangxian[0][1]))
@@ -1603,15 +1644,12 @@ class DisplayUtil {
           return l1 + d * (index -1 );
         }
       })
-    }).flat(1);
+    }).flat(1).filter((l:any) => !isNaN(l));
     lineLevalArr = [...new Set(lineLevalArr)];
-    console.log(levelArr,lineLevalArr);
     let minLevel = Math.min(...levelArr, ...lineLevalArr);
     let maxLevel = Math.max(...levelArr, ...lineLevalArr);
-    console.log(maxLevel);
     let minY = minLevel * this.ySubLength - this.mainPadding;
     let maxY = maxLevel * this.ySubLength + this.mainPadding;
-    console.log(maxY);
     let minX = -this.mainPadding;
     let allLen = this.getDateDaySub(this.startDate, this.endDate)
     let needNum = this.needAddSubDateNum(this.endDate);

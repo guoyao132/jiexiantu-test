@@ -3,7 +3,7 @@ import axios from 'axios'
 // const Message = resetMessage.resetMessage;
 //@ts-ignore
 import qs from 'qs'
-import router from '../../router/index.js'
+// import router from '../../router/index.js'
 import {decrypt, encrypt} from './enable.js'
 const encryptionUrlArr:any=[
   /* {name:'用户添加编辑保存',url:'/sys/user/save'},
@@ -131,16 +131,16 @@ service.interceptors.response.use(
         //   type: 'info'
         // });
       } else if (status == 401) { // 此处需要单独在 login.vue 中处理；
-        if(router.options.history.location != '/login') {
+        // if(router.options.history.location != '/login') {
           alert("会话过期，请重新登陆");
-          router.replace('/login')
-        }
+          // router.replace('/login')
+        // }
         return
       } else if(status == 403){
         alert("越权访问！");
-        if(router.options.history.location != '/login') {
-          router.replace('/login')
-        }
+        // if(router.options.history.location != '/login') {
+          // router.replace('/login')
+        // }
         return
       } else { //其他错误错误码统一弹框
         let url = (error.response && error.response.config && error.response.config.url) || '';
