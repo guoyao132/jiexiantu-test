@@ -116,7 +116,7 @@ class DisplayUtil {
     }).then((resp: any) => {
       let result = resp.result || {};
       let moduleXml = result.moduleXml;
-      if(moduleXml){
+      if(false && moduleXml){
         //更新线
         let data = window.Graph.zapGremlins(moduleXml)
         this.graph.getModel().beginUpdate()
@@ -530,7 +530,6 @@ class DisplayUtil {
     this.addAllEdge();
     this.addPointCell();
     this.addLineCell();
-    // this.editorUi.toggleFormatPanel();
     this.graph.getModel().endUpdate()
 
     //更新线
@@ -743,8 +742,7 @@ class DisplayUtil {
           if(lastTime - startTime > valSmalLastTime - sDate){
             valueLinshi = obj;
             objLinshi = value;
-            upV = obj[0] + (d * value.length - 1);
-            obj[0] = upV;
+            upV = objLinshi[0] + (d * value.length - 1);
           }
           valueLinshi[0] = upV;
           let changeObjArr = valueLinshi.slice(1).map((l:any) => l.changeId);
@@ -801,9 +799,9 @@ class DisplayUtil {
         }
       })
     }
+    console.log(lineLevelObjNew);
     this.lineLevelObj = lineLevelObjNew;
     this.addMoreStartPoint();
-
     this.changePointYSort()
   }
 
@@ -824,24 +822,60 @@ class DisplayUtil {
       let startLeval = 1;
       if (level !== 0) {
         if(level > 0) {
-          startLeval = level - 1;
-        }else{
           startLeval = level + 1;
+        }else{
+          startLeval = level - 1;
         }
       }
+
+
+      let maxStartLeval = level;
+      let lineInPoint = this.liuchengData.filter((d: LiuChengData) => {
+        let time = Date.parse(d.date);
+        let arr: any = [];
+        this.getAllToZeorPoints(d.id, arr, true);
+        let ids = arr.map((val: any) => val.toId);
+        ids = [...new Set(ids)]
+        let timeIds = this.getDateById(ids);
+        let lastTime = timeIds.length === 0 ? 0 : Math.max(...timeIds.map(v => v.time));
+        if(time >= sDate && lastTime !== 0 && lastTime <= eDate){
+          return true
+        }
+        return false
+      });
+      let lineInPointLeval:number[] = lineInPoint.map((d:any) => this.pointLevelObj[d.id]);
+      if(lineInPoint.length != 0){
+        maxStartLeval = Math.max(...lineInPointLeval) + 1;
+        console.log(id, toId, maxStartLeval, startLeval);
+      }
+
       let changeId:number[] = [];
       this.liuchengData.forEach((d: LiuChengData) => {
         let time = Date.parse(d.date);
         let l: number = this.pointLevelObj[d.id];
         let arr: any = [];
-        this.findLastZeroPoint(d.id, arr);
+        this.getAllToZeorPoints(d.id, arr, true);
         let ids = arr.map((val: any) => val.toId);
         ids = [...new Set(ids)]
         let timeIds = this.getDateById(ids);
         let lastTime = Math.max(...timeIds.map(v => v.time));
         let isLevel = level === 0 ? l > level : Math.abs(l) >= Math.abs(level);
-        if (time <= eDate && isLevel && lastTime > sDate) {
-          this.pointLevelObj[d.id] = this.getUpPointLevel(this.pointLevelObj[d.id]);
+        if(startLeval === 0){
+          isLevel = Math.abs(l) >= Math.abs(maxStartLeval);
+        }
+        if(lineInPoint.length != 0 && Math.abs(startLeval) < Math.abs(maxStartLeval) && ((l > 0 && maxStartLeval > 0) || (l <= 0 && maxStartLeval <= 0))){
+          isLevel = Math.abs(l) >= Math.abs(maxStartLeval - 1);
+        }
+        if(isLevel){
+          console.log(d.id, l, time <= eDate, lastTime > sDate);
+        }
+        if (time <= eDate && isLevel && lastTime > sDate && lastTime !== eDate) {
+          let num = 1;
+          if(startLeval === 0){
+            num = 2;
+          }
+          console.log(d.id);
+          this.pointLevelObj[d.id] = this.getUpPointLevel(this.pointLevelObj[d.id], num);
           changeId.push(d.id);
         }
       })
@@ -851,6 +885,13 @@ class DisplayUtil {
         eDate,
         changeId,
       }
+      if(startLeval === 0){
+        startLeval = 1;
+      }
+      if(lineInPoint.length != 0 && Math.abs(startLeval) < Math.abs(maxStartLeval)){
+        startLeval = maxStartLeval;
+      }
+
       // let obj = lineObj.taskName;
       if (lineLevelObj[id]) {
         lineLevelObj[id].push(obj)
@@ -1093,6 +1134,7 @@ class DisplayUtil {
       }
     })
     let hasId:number[] = [];
+    let startPoint:LiuChengData | undefined = this.liuchengData.find((d:any) => d.id === 0);
     lineArr.forEach((v: any, i: number) => {
       if(hasId.includes(v.toId)){
         return
@@ -1117,6 +1159,10 @@ class DisplayUtil {
         if (i % 2 === 0 && level !== 0) {
           level *= -1;
         }
+        if(startPoint){
+          level = i;
+        }
+
         let oldLevel = this.pointLevelObj[v.toId];
         if(oldLevel !== 0) {
           this.pointLevelObj[v.toId] = level;
@@ -1267,18 +1313,19 @@ class DisplayUtil {
   }
 
   // 根据点位ID获取需要修改的点位
-  getAllToZeorPoints(id: number, arr: any) {
+  getAllToZeorPoints(id: number, arr: any, isZero?:boolean,pId?:number) {
     let obj = this.liuchengData.find((val => val.id === id));
     let lines = obj?.lines;
     lines?.forEach(v => {
-      {
-        let l = this.pointLevelObj[v.toId] || 0;
-        if (l === 0) {
-          return;
-        } else {
+      let l = this.pointLevelObj[v.toId] || 0;
+      if (l === 0) {
+        if(isZero){
           arr.push(v);
-          this.getAllToZeorPoints(v.toId, arr);
         }
+        return;
+      } else {
+        arr.push(v);
+        this.getAllToZeorPoints(v.toId, arr, isZero,id);
       }
     })
     return arr;
@@ -1314,7 +1361,8 @@ class DisplayUtil {
   }
 
   // 获取点位升级后的层级
-  getUpPointLevel(level: number, num:number = 1) {
+  getUpPointLevel(level: number, num?:number) {
+    num = num || 1;
     if (level <= 0) {
       return level - num;
     } else {
@@ -1324,6 +1372,7 @@ class DisplayUtil {
 
   // 添加点位
   addPointCell() {
+    console.log(this.pointLevelObj);
     let cells: any = [];
     this.liuchengData.forEach(v => {
       if(v.id === 0){
@@ -1490,7 +1539,7 @@ class DisplayUtil {
         // styleStr += 'curved=1;';
         let type3Line: any = [];
         let bolangxian: any = null;
-        let x = this.getDateXLen(val.date);
+        let x = this.getDateXLen(val.date) + this.pointSize * exitX;
         let yS = y1 + (entryY * this.pointSize);
         let yE = y2 + (entryY * this.pointSize);
         let pointS = [x1 + (exitX * this.pointSize), yS];
