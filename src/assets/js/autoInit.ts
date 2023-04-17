@@ -526,6 +526,8 @@ class DisplayUtil {
     this.formataLines();
     this.formatData();
     this.addLineLevel();
+    this.addMoreStartPoint();
+    this.changePointYSort()
     this.graph.getModel().beginUpdate()
     this.addAllEdge();
     this.addPointCell();
@@ -799,10 +801,7 @@ class DisplayUtil {
         }
       })
     }
-    console.log(lineLevelObjNew);
     this.lineLevelObj = lineLevelObjNew;
-    this.addMoreStartPoint();
-    this.changePointYSort()
   }
 
   upTopLevelPoint(sDate:number, eDate:number, level:number, id:number, toId:number, lineObj:any, lineLevelObj:any){
@@ -846,10 +845,13 @@ class DisplayUtil {
       let lineInPointLeval:number[] = lineInPoint.map((d:any) => this.pointLevelObj[d.id]);
       if(lineInPoint.length != 0){
         maxStartLeval = Math.max(...lineInPointLeval) + 1;
-        console.log(id, toId, maxStartLeval, startLeval);
       }
 
       let changeId:number[] = [];
+      let minLeval:number | null = null;
+      if(lineLevelObj[id]){
+        maxStartLeval = lineLevelObj[id].length;
+      }
       this.liuchengData.forEach((d: LiuChengData) => {
         let time = Date.parse(d.date);
         let l: number = this.pointLevelObj[d.id];
@@ -863,22 +865,34 @@ class DisplayUtil {
         if(startLeval === 0){
           isLevel = Math.abs(l) >= Math.abs(maxStartLeval);
         }
-        if(lineInPoint.length != 0 && Math.abs(startLeval) < Math.abs(maxStartLeval) && ((l > 0 && maxStartLeval > 0) || (l <= 0 && maxStartLeval <= 0))){
-          isLevel = Math.abs(l) >= Math.abs(maxStartLeval - 1);
+        let num = 1;
+        if(startLeval === 0){
+          num = 2;
         }
-        if(isLevel){
-          console.log(d.id, l, time <= eDate, lastTime > sDate);
+        if(lineInPoint.length != 0 && Math.abs(startLeval) <= Math.abs(maxStartLeval) && ((l > 0 && maxStartLeval > 0) || (l <= 0 && maxStartLeval <= 0))){
+          isLevel = Math.abs(l) > Math.abs(maxStartLeval - 1);
         }
-        if (time <= eDate && isLevel && lastTime > sDate && lastTime !== eDate) {
-          let num = 1;
-          if(startLeval === 0){
-            num = 2;
+        if (time <= eDate && isLevel && lastTime !== eDate) {
+          let setL = this.getUpPointLevel(this.pointLevelObj[d.id], num);
+          if(!minLeval){
+            minLeval = setL;
           }
-          console.log(d.id);
-          this.pointLevelObj[d.id] = this.getUpPointLevel(this.pointLevelObj[d.id], num);
+          minLeval = Math.min(minLeval, setL);
+          this.pointLevelObj[d.id] = setL;
           changeId.push(d.id);
         }
       })
+      if(minLeval){
+        let i = 1;
+        for(let key in lineLevelObj){
+          let value = lineLevelObj[key];
+          let lineLeval = value[0];
+          if(lineLeval >= minLeval){
+            value[0] = value[0] + i;
+            i++;
+          }
+        }
+      }
       let obj = {
         ...lineObj,
         sDate,
@@ -976,6 +990,11 @@ class DisplayUtil {
               }
             })
           }
+        }else{
+          let sLeval = this.pointLevelObj[s.id];
+          allPointId.forEach(i => {
+            this.pointLevelObj[i] = this.pointLevelObj[i] - sLeval;
+          })
         }
         changePointArr.push(...allPointId)
         prevMax = Math.max(...allPointId.map((id:number) => this.pointLevelObj[id]));
