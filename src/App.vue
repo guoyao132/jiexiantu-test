@@ -23,9 +23,11 @@ init();
 </script>
 
 
-<style lang="less" scoped>
-  .mxgraph-con{
+<style lang="less">
+  body{
     width: 100%;
     height: 100%;
+    aspect-ratio: 4/3;
+    background: #000;
   }
 </style>
