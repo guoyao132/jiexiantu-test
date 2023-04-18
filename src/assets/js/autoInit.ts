@@ -682,6 +682,7 @@ class DisplayUtil {
   getIdBySerialNumber(serialNumbers:string | number | number[] | string[]){
     let isArr = Array.isArray(serialNumbers);
     if(!isArr){
+      //@ts-ignore
       serialNumbers = [serialNumbers];
     }
     //@ts-ignore
