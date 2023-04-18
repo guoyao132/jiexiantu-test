@@ -7668,8 +7668,9 @@ if (typeof mxVertexHandler != 'undefined')
 		{
 			if (this.isEnabled())
 			{
-				cell = this.insertTextForEvent(evt, cell);
-				mxGraph.prototype.dblClick.call(this, evt, cell);
+				if(cell && cell.id && !cell.id.includes('point')){
+					mxGraph.prototype.dblClick.call(this, evt, cell);
+				}
 			}
 		};
 

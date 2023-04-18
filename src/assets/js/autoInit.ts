@@ -1,6 +1,6 @@
 import editorui from './graphInit';
 import {watch} from 'vue'
-import {getDiagramList, getBySingleId} from '../../api'
+import {getDiagramList, getBySingleId, editDiagramTaskName} from '../../api'
 import data from './data'
 import data1 from './data1'
 import data2 from './data2'
@@ -8,7 +8,10 @@ import data3 from './data3'
 import data4 from './data4'
 import data5 from './data5'
 import dataOld from './data-1'
-import {toRaw} from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import 'element-plus/es/components/message-box/style/css'
+
+const MESSAGE_DURATION:number = 3000;
 
 interface LiuChengLineData {
   toId: number,
@@ -18,6 +21,7 @@ interface LiuChengLineData {
   level?: number,
   date?: string,
   taskName?: string,
+  serialNumber?: string,
 }
 
 interface LiuChengData {
@@ -64,6 +68,9 @@ class DisplayUtil {
   resultDate: any;       //接口请求数据
   isInit: boolean;  //是否初始化
   route: any;  //路由
+  singleId: string;
+  graphEventList: any;
+  graphModelEventList: any;
 
   constructor() {
     this.editorUi = null;
@@ -99,6 +106,9 @@ class DisplayUtil {
     this.rightBottomPoint = [];
     this.linePointVertex = {};
     this.resultDate = [];
+    this.singleId = '';
+    this.graphEventList = [];
+    this.graphModelEventList = [];
   }
 
   init(query:any) {
@@ -110,46 +120,15 @@ class DisplayUtil {
       })
     }
   }
-  getData(singleId:string){
-    getBySingleId({
-      singleId: singleId
-    }).then((resp: any) => {
-      let result = resp.result || {};
-      let moduleXml = result.moduleXml;
-      if(false && moduleXml){
-        //更新线
-        let data = window.Graph.zapGremlins(moduleXml)
-        this.graph.getModel().beginUpdate()
-        this.editorUi.editor.setGraphXml(window.mxUtils.parseXml(data).documentElement);
-        this.graph.getModel().endUpdate()
-        this.graph.fit(10, false, 0, true,false, false);
-        this.addEvents();
-      }else{
-        getDiagramList({
-          singleId: singleId,
-        }).then((resp:any) => {
-          let result = resp.result || {};
-          let diagramList = result.diagramList;
-          diagramList.forEach((v:any) => {
-            v.planEndDateOld = v.planEndDate;
-            v.planEndDate = Date.parse(v.planEndDate + ' 00:00:00');
-            v.planStartDateOld = v.planStartDate;
-            v.planStartDate = Date.parse(v.planStartDate + ' 00:00:00');
-          })
-          this.resultDate = result.diagramList || [];
-          this.drawLiucheng();
-        })
-      }
-    })
-  }
   initFun(query:any){
     this.clearGraphModel();
     this.isInit = true;
     this.editorUi = editorui.value;
     this.graph = this.editorUi.editor.graph;
-
     this.editorUi.$route = query.query.value;
-
+    this.editorUi.$ElMessageBox = ElMessageBox;
+    this.editorUi.$displayUtil = displayUtil;
+    this.addEvents();
     this.parentCell = this.graph.getDefaultParent();
     if(query.singleId){
       this.getData(query.singleId);
@@ -169,6 +148,42 @@ class DisplayUtil {
       this.resultDate = d[t];
       this.drawLiucheng();
     }
+  }
+
+  getData(singleId:string){
+    this.singleId = singleId;
+    getBySingleId({
+      singleId: singleId
+    }).then((resp: any) => {
+      let result = resp.result || {};
+      let moduleXml = result.moduleXml;
+      if(false && moduleXml){
+        //更新线
+        let data = window.Graph.zapGremlins(moduleXml)
+        this.graph.getModel().beginUpdate()
+        this.editorUi.editor.setGraphXml(window.mxUtils.parseXml(data).documentElement);
+        this.graph.getModel().endUpdate()
+        this.graph.fit(10, false, 0, true,false, false);
+      }else{
+        this.getOnlineData(singleId);
+      }
+    })
+  }
+  getOnlineData(singleId:string){
+    getDiagramList({
+      singleId: singleId,
+    }).then((resp:any) => {
+      let result = resp.result || {};
+      let diagramList = result.diagramList;
+      diagramList.forEach((v:any) => {
+        v.planEndDateOld = v.planEndDate;
+        v.planEndDate = Date.parse(v.planEndDate + ' 00:00:00');
+        v.planStartDateOld = v.planStartDate;
+        v.planStartDate = Date.parse(v.planStartDate + ' 00:00:00');
+      })
+      this.resultDate = result.diagramList || [];
+      this.drawLiucheng();
+    })
   }
 
   getLiuchengData() {
@@ -492,6 +507,7 @@ class DisplayUtil {
               level: c.level,
               date: c.date,
               taskName: c.taskName,
+              serialNumber: c.serialNumber,
             })
           }else{
             console.error(serialNumber);
@@ -539,24 +555,84 @@ class DisplayUtil {
     this.editorUi.editor.setGraphXml(node);
     this.graph.getModel().endUpdate()
     this.graph.fit(10, false, 0, true,false, false);
+  }
 
-    this.addEvents();
+  destroyEvents(){
+    this.graphEventList.forEach((e:any) => {
+      this.graph.removeListener(e);
+    })
+    this.graphModelEventList.forEach((e:any) => {
+      this.graph.getModel().removeListener(e);
+    })
+    this.graphEventList = [];
+    this.graphModelEventList = [];
   }
 
   addEvents(){
-    // this.graph.addListener(window.mxEvent.CLICK, function(sender, evt) {
-    //   console.log(sender, evt);
-    // });
-    this.graph.getModel().addListener(window.mxEvent.CHANGE, function(sender:any, evt:any) {
+    const self = this;
+    let DOUBLE_CLICK_Listener = function(sender:any, evt:any) {
+      let e = evt.getProperty('event'); // mouse event
+      let cell = evt.getProperty('cell'); // cell may be null
+      if (!cell) {
+        // Do something useful with cell and consume the event
+      }
+    };
+    this.graph.addListener(window.mxEvent.DOUBLE_CLICK, DOUBLE_CLICK_Listener);
+    this.graphEventList.push(DOUBLE_CLICK_Listener)
+    let CLICK_Listener = function(sender:any, evt:any) {
+      let e = evt.getProperty('event'); // mouse event
+      let cell = evt.getProperty('cell'); // cell may be null
+      if(cell){
+        let cellId = cell?.id || '';
+      }
+    };
+    this.graph.addListener(window.mxEvent.CLICK, CLICK_Listener);
+    this.graphEventList.push(CLICK_Listener)
+    const CHANGE_Listener = function(sender:any, evt:any) {
       let  changes = evt.getProperty('edit').changes;
       changes.forEach((change:any) => {
+        let previous = change.previous;
+        let value = change.value;
         let cell = change.cell
         let cellId = cell?.id || '';
+        // if(changeIds.includes(cellId)){
+        //   return
+        // }
         if(cellId.includes('point-')){
-          cell.geometry.x =change.previous.x;
+          cell.geometry.x = change.previous.x;
+        }else if(cellId.includes('line-')){
+          let serialNumbers =  cellId.split('-')[1]
+          if(value){
+            let id = self.getIdBySerialNumber(serialNumbers);
+            editDiagramTaskName({
+              id: id,
+              taskName: value,
+            })
+          }
+        }else if(cellId.includes('gongqi-')){
+          console.log(cellId);
+          console.log(previous);
+          console.log(value);
+          let setValue = Number(value);
+          if(isNaN(setValue)){
+            ElMessage.error({
+              message: '请输入正确格式的工期！',
+              duration: MESSAGE_DURATION,
+              showClose: true,
+            })
+          }else{
+            let serialNumbers =  cellId.split('-')[1]
+            let id = self.getIdBySerialNumber(serialNumbers);
+            console.log(id);
+
+          }
         }
       })
-    })
+    }
+    this.graph.getModel().addListener(window.mxEvent.CHANGE, CHANGE_Listener);
+    this.graphModelEventList.push(CHANGE_Listener)
+
+
 
     // const self = this;
     // const container = this.graph.container;
@@ -601,6 +677,16 @@ class DisplayUtil {
     //   }
     // })
     // )
+  }
+
+  getIdBySerialNumber(serialNumbers:string | number | number[] | string[]){
+    let isArr = Array.isArray(serialNumbers);
+    if(!isArr){
+      serialNumbers = [serialNumbers];
+    }
+    //@ts-ignore
+    let ids = displayUtil.resultDate.filter((r:any) => serialNumbers.includes(r.serialNumber)).map((i:any) => i.id || '');
+    return isArr ? ids : ids[0];
   }
 
   //设置最小时间差
@@ -865,25 +951,14 @@ class DisplayUtil {
             l = max - 1;
           }
           if(max - min === 1){
-            // let chanegId = lines.filter((id:any) => this.pointLevelObj[id] === max);
-            this.pointLevelObj[key] = max + 1;
+            let maxObj = lines.find((id:any) => this.pointLevelObj[id] === max);
+            maxObj && this.upPointLevelAndChild(maxObj, max + 1)
+            // this.pointLevelObj[maxObj] =  max + 1;
             l = max;
           }
           changeLine.push(...lines.map((v:any) => `${v}-${key}`))
-
           if(l !== this.pointLevelObj[key]){
-            this.pointLevelObj[key] = l;
-            let dArr = this.liuchengData.filter((d:any) => {
-              let lineIds = d.lines.map((l:any) => l.toId);
-              let isHas = false;
-              lineIds.forEach((id:number) => {
-                if(lines.includes(id)){
-                  isHas = true
-                }
-              })
-              return isHas;
-            })
-            // this.upPrevLeval(v.id, v.level, v.toId);
+            this.upPointLevelAndChild(Number(key), l)
           }
         }
       }
@@ -903,12 +978,25 @@ class DisplayUtil {
           l = max - 1;
         }
         if(max - min === 1){
-          let chanegId = lines.filter((id:any) => this.pointLevelObj[id] === max);
-          // this.pointLevelObj[chanegId] = max + 1;
+          let maxObj = lines.find((id:any) => this.pointLevelObj[id] === max);
+          maxObj && this.upPointLevelAndChild(maxObj, max + 1)
           l = max;
         }
-        // this.pointLevelObj[key] = l;
+        if(this.pointLevelObj[key] !== l){
+          this.upPointLevelAndChild(Number(key), l)
+        }
       }
+    })
+  }
+
+  upPointLevelAndChild(key:number, l:number){
+    let oldLevel = this.pointLevelObj[key];
+    this.pointLevelObj[key] = l;
+    let arr: any = [];
+    this.getAllToZeorPoints(key, arr,false, true);
+    let upLeval = l - oldLevel;
+    arr.forEach((l:any) => {
+      this.pointLevelObj[l.toId] = this.getUpPointLevel(this.pointLevelObj[l.toId], upLeval);
     })
   }
 
@@ -1134,7 +1222,7 @@ class DisplayUtil {
   }
 
   // 根据点位ID获取需要修改的点位
-  getAllToZeorPoints(id: number, arr: any, isZero?:boolean,pId?:number) {
+  getAllToZeorPoints(id: number, arr: any,  isZero:boolean = false, isNoLs:boolean = false) {
     let obj = this.liuchengData.find((val => val.id === id));
     let lines = obj?.lines;
     lines?.forEach(v => {
@@ -1145,8 +1233,11 @@ class DisplayUtil {
         }
         return;
       } else {
+        if(isNoLs && v.taskName === 'LS'){
+          return;
+        }
         arr.push(v);
-        this.getAllToZeorPoints(v.toId, arr, isZero,id);
+        this.getAllToZeorPoints(v.toId, arr, isZero);
       }
     })
     return arr;
@@ -1220,6 +1311,7 @@ class DisplayUtil {
   // 添加线
   addLineCell() {
     let addLineArr:any = [];
+    console.log(this.linesArr);
     this.linesArr.forEach((val: any) => {
       if(val.taskName === '-1'){
         return;
@@ -1474,11 +1566,13 @@ class DisplayUtil {
           lineLen = '';
         }
       }
-      let e1 = this.graph.insertEdge(this.dataCellObj[val.id], null, lineValue, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr);
+      let lineId = val.serialNumber ? `line-${val.serialNumber}` : null;
+      let e1 = this.graph.insertEdge(this.dataCellObj[val.id], lineId, lineValue, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr);
       e1.geometry.points = points
       addLineArr.push(lineBiaoshi);
+      let gongqiId = val.serialNumber ? `gongqi-${val.serialNumber}` : null;
       let lenStyle = `edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=${this.fontSize};labelBackgroundColor=none;`
-      this.graph.insertVertex(e1, null, lineLen, 0, -20, 0, 0, lenStyle, true);
+      this.graph.insertVertex(e1, gongqiId, lineLen, 0, -20, 0, 0, lenStyle, true);
     })
   }
 
@@ -1811,6 +1905,7 @@ class DisplayUtil {
 
   clearGraphModel(){
     if(this.isInit){
+      this.destroyEvents();
       this.graph.getModel().clear()
       this.isInit = false;
       this.parentCell = null;

@@ -894,17 +894,17 @@ function Dialog(editorUi, elt, w, h, modal, closable, onClose, noScroll, transpa
 		{
 			var mouseDownSeen = false;
 
-			mxEvent.addGestureListeners(this.bg, mxUtils.bind(this, function(evt)
-			{
-				mouseDownSeen = true;
-			}), null, mxUtils.bind(this, function(evt)
-			{
-				if (mouseDownSeen)
-				{
-					editorUi.hideDialog(true);
-					mouseDownSeen = false;
-				}
-			}));
+			// mxEvent.addGestureListeners(this.bg, mxUtils.bind(this, function(evt)
+			// {
+			// 	mouseDownSeen = true;
+			// }), null, mxUtils.bind(this, function(evt)
+			// {
+			// 	if (mouseDownSeen)
+			// 	{
+			// 		editorUi.hideDialog(true);
+			// 		mouseDownSeen = false;
+			// 	}
+			// }));
 		}
 	}
 

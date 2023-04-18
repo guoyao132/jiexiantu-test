@@ -1,5 +1,5 @@
 import {ref} from 'vue'
-import {saveScheduleGraph} from '../../api'
+import {saveScheduleGraph, removeDiagram} from '../../api'
 let bundle = window.mxResources.getDefaultBundle(window.RESOURCE_BASE, window.mxLanguage) ||
   window.mxResources.getSpecialBundle(window.RESOURCE_BASE, window.mxLanguage);
 let editorui:any  = ref(null);
@@ -13,10 +13,12 @@ window.mxUtils.getAll([bundle, window.STYLE_PATH + '/default.xml'], function(xhr
   // @ts-ignore
   themes[window.Graph.prototype.defaultThemeName] = xhr[1].getDocumentElement();
   window.EditorUi.prototype.formatWidth = 0
-  window.EditorUi.prototype.$get = {
+  window.EditorUi.prototype.$api = {
     saveScheduleGraph,
+    removeDiagram,
   }
-  window.EditorUi.prototype.$route = 1;
+  window.EditorUi.prototype.$route = null;
+  window.EditorUi.prototype.$ElMessageBox = null;
 
   editorui.value = new window.EditorUi(new window.Editor(false, themes));
 }, function()
