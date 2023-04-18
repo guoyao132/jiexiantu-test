@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "serve": "vite",
-    "build": "vue-tsc && vite build"
+    "build": "vue-ts --noEmit --skipLibCheckc && vite build"
   },
   "dependencies": {
     "axios": "^1.3.4",
