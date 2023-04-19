@@ -7668,8 +7668,11 @@ if (typeof mxVertexHandler != 'undefined')
 		{
 			if (this.isEnabled())
 			{
-				if(cell && cell.id && !cell.id.includes('point')){
+				console.log(cell && cell.id && !(cell.id.includes('point-') || cell.id.includes('quyu-')));
+				if(cell && cell.id && !(cell.id.includes('point-') || cell.id.includes('quyu-'))){
 					mxGraph.prototype.dblClick.call(this, evt, cell);
+				}else if(!cell || cell.id.includes('quyu-')){
+					mxGraph.prototype.dblClick.call(this, evt, null);
 				}
 			}
 		};

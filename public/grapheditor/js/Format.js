@@ -1190,7 +1190,6 @@ BaseFormatPanel.prototype.createColorOption = function(label, getColorFn, setCol
 	mxEvent.addListener(div, 'click', function(evt)
 	{
 		var source = mxEvent.getSource(evt);
-		console.log(source);
 		if (source == cb || source.nodeName != 'INPUT')
 		{
 			// Toggles checkbox state for click on label

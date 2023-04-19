@@ -47,6 +47,7 @@ class DisplayUtil {
   pointSize: number;       //点位圆点大小
   editorUi: any;           //UI对象
   graph: any;             //graph对象
+  graphModel: any;             //graph对象
   parentCell: any;        //父节点
   dataCellObj: any;       //cell节点对象
   linesArr: any;          //线数组
@@ -64,6 +65,7 @@ class DisplayUtil {
   rightTopPoint: number[];     //main容器点位位置
   rightBottomPoint: number[];     //main容器点位位置
   biaochiHeight: number;        //标尺高度
+  bottomHei: number;        //底部高度
   linePointVertex: any;         //线点位对象
   dateFormatType: string;       //日期格式
   resultDate: any;       //接口请求数据
@@ -72,12 +74,18 @@ class DisplayUtil {
   singleId: string;
   graphEventList: any;
   graphModelEventList: any;
+  dialogObj: any;
+  initScale: number;
+  quyuList: any;
+  focusCellId: string;
 
   constructor() {
     this.editorUi = null;
     this.graph = null;
+    this.graphModel = null;
     this.isInit = false;
     this.biaochiHeight = 50;
+    this.bottomHei = 200;
     this.mainPadding = 250;
     this.dateSubLength = 100;
     this.ySubLength = 100;
@@ -110,6 +118,9 @@ class DisplayUtil {
     this.singleId = '';
     this.graphEventList = [];
     this.graphModelEventList = [];
+    this.dialogObj = {};
+    this.initScale = 0;
+    this.quyuList = [];
   }
 
   init(query: any) {
@@ -127,6 +138,7 @@ class DisplayUtil {
     this.isInit = true;
     this.editorUi = editorui.value;
     this.graph = this.editorUi.editor.graph;
+    this.graphModel = this.graph.getModel();
     this.editorUi.$route = query.query.value;
     this.editorUi.$ElMessageBox = ElMessageBox;
     this.editorUi.$displayUtil = displayUtil;
@@ -162,9 +174,9 @@ class DisplayUtil {
       if (false && moduleXml) {
         //更新线
         let data = window.Graph.zapGremlins(moduleXml)
-        this.graph.getModel().beginUpdate()
+        this.graphModel.beginUpdate()
         this.editorUi.editor.setGraphXml(window.mxUtils.parseXml(data).documentElement);
-        this.graph.getModel().endUpdate()
+        this.graphModel.endUpdate()
         this.graph.fit(10, false, 0, true, false, false);
       } else {
         this.getOnlineData(singleId);
@@ -544,19 +556,25 @@ class DisplayUtil {
     this.formataLines();
     this.formatData();
     this.addLineLevel();
-    this.graph.getModel().beginUpdate()
+    this.graphModel.beginUpdate()
     this.addAllEdge();
     this.addPointCell();
     this.addLineCell();
-    this.graph.getModel().endUpdate()
-
+    let minX = this.leftTopPoint[0];
+    let maxX = this.rightBottomPoint[0];
+    let minY = this.leftTopPoint[1] - this.biaochiHeight * 3;
+    let maxY = this.rightBottomPoint[1] + this.bottomHei;
+    this.addFenqu(minX, minY, maxX - minX, maxY - minY);
+    this.graphModel.endUpdate()
     //更新线
-    this.graph.getModel().beginUpdate()
+    this.graphModel.beginUpdate()
     let enc = new window.mxCodec();
     let node = enc.encode(this.graph.getModel());
     this.editorUi.editor.setGraphXml(node);
-    this.graph.getModel().endUpdate()
+    this.graph.orderCells(true, this.quyuList.map((quyuId:string) => this.graphModel.getCell(quyuId)));
+    this.graphModel.endUpdate()
     this.graph.fit(10, false, 0, true, false, false);
+
   }
 
   destroyEvents() {
@@ -564,7 +582,7 @@ class DisplayUtil {
       this.graph.removeListener(e);
     })
     this.graphModelEventList.forEach((e: any) => {
-      this.graph.getModel().removeListener(e);
+      this.graphModel.removeListener(e);
     })
     this.graphEventList = [];
     this.graphModelEventList = [];
@@ -576,7 +594,7 @@ class DisplayUtil {
       let e = evt.getProperty('event'); // mouse event
       let cell = evt.getProperty('cell'); // cell may be null
       if (!cell) {
-        // Do something useful with cell and consume the event
+        self.dialogObj['addDialog'].value = true;
       }
     };
     this.graph.addListener(window.mxEvent.DOUBLE_CLICK, DOUBLE_CLICK_Listener);
@@ -586,83 +604,19 @@ class DisplayUtil {
       let cell = evt.getProperty('cell'); // cell may be null
       if (cell) {
         let cellId = cell?.id || '';
+        if (cellId.includes('line-')){
+          self.scaleAndMoveCellToCenter(cell);
+        }
       }
     };
     this.graph.addListener(window.mxEvent.CLICK, CLICK_Listener);
     this.graphEventList.push(CLICK_Listener)
-    const CHANGE_Listener = function (sender: any, evt: any) {
-      let changes = evt.getProperty('edit').changes;
-      changes.forEach((change: any) => {
-        let previous = change.previous;
-        let value = change.value;
-        let cell = change.cell
-        let cellId = cell?.id || '';
-        if (cellId.includes('point-')) {
-          cell.geometry.x = change.previous.x;
-        } else if (cellId.includes('line-')) {
-          let serialNumber = cellId.split('-')[1]
-          let obj = self.resultDate.find((r: any) => serialNumber == r.serialNumber);
-          if (value && previous != value && obj) {
-            console.log(serialNumber);
-            let oldName = obj.taskName;
-            if(value === oldName){
-              return
-            }
-            ElMessageBox.confirm(`确认将任务 ${oldName} 改为 ${value} 吗？`, '提示', {
-              confirmButtonText: '确认',
-              cancelButtonText: '取消',
-              autofocus: false,
-            }).then(() => {
-              let id = self.getIdBySerialNumber(serialNumber)
-              editDiagramTaskName({
-                id: id,
-                taskName: value,
-              }).then(() => {
-                obj.taskName = value;
-              })
-            }).catch(() => {
-              self.graph.getModel().setValue(cell, previous);
-            })
-          }
-        } else if (cellId.includes('gongqi-')) {
-          let setValue = Number(value);
-          if (isNaN(setValue)) {
-            ElMessage.error({
-              message: '请输入正确格式的工期！',
-              duration: MESSAGE_DURATION,
-              showClose: true,
-            })
-          } else {
-            let serialNumber = cellId.split('-')[1]
-            let obj = self.resultDate.find((r: any) => serialNumber == r.serialNumber);
-            if (value && previous != value && obj) {
-              let oldduration = obj.duration;
-              if(oldduration == value){
-                return;
-              }
-              let taskName = obj.taskName;
-              ElMessageBox.confirm(`确认将任务 ${taskName} 工期改为改为 ${value} 吗？`, '提示', {
-                confirmButtonText: '确认',
-                cancelButtonText: '取消',
-                autofocus: false,
-              }).then(() => {
-                let id = self.getIdBySerialNumber(serialNumber)
-                obj.duration = value;
-                console.log(obj);
-                self.changeGongqi(id, value);
-              }).catch((err) => {
-                console.error(err);
-                self.graph.getModel().setValue(cell, previous);
-              })
-            }
-
-
-          }
-        }
-      })
+    const SCALE_Listener = (sender: any, evt: any) => {
+      console.log(sender);
+      console.log(evt);
     }
-    this.graph.getModel().addListener(window.mxEvent.CHANGE, CHANGE_Listener);
-    this.graphModelEventList.push(CHANGE_Listener)
+    this.graph.view.addListener(window.mxEvent.SCALE, SCALE_Listener);
+    this.graphModelEventList.push(SCALE_Listener)
 
 
     // const self = this;
@@ -675,7 +629,6 @@ class DisplayUtil {
     //     let cell = self.graph.getCellAt(pt.x, pt.y);
     //     //@ts-ignore
     //     let state = this.getState(cell);
-    //     console.log(cell);
     //     // if (state != null) {
     //     //   self.graph.fireMouseEvent(window.mxEvent.MOUSE_DOWN,
     //     //     new mxMouseEvent(evt, state));
@@ -712,7 +665,6 @@ class DisplayUtil {
 
   changeGongqi(id:string | number, value:number){
     let obj = this.resultDate.find((r: any) => id == r.id);
-    console.log(JSON.parse(JSON.stringify(obj)));
     if (!obj.parentId) {
       obj.planEndDate = this.rqDateFn(Number(obj.duration), 0, obj.planStartDate, 'planEndDate', 'FS');
       return
@@ -724,8 +676,7 @@ class DisplayUtil {
     const d = new Date(obj.planStartDate);
     obj.planEndDate = this.timestampToTime(d.setDate(d.getDate() + (Number(obj.duration) - 1)));
     editDiagram(obj).then(() => {
-      this.clearGraphModel();
-      this.getOnlineData(this.singleId);
+      this.updateOnLineXml();
     })
   }
 
@@ -841,8 +792,8 @@ class DisplayUtil {
   //排序
   bubbleSort (prop:string) {
     return function (obj1:any, obj2:any) {
-      var val1 = obj1[prop];
-      var val2 = obj2[prop];
+      let val1 = obj1[prop];
+      let val2 = obj2[prop];
       if (val1 < val2) {
         return -1;
       } else if (val1 > val2) {
@@ -949,16 +900,16 @@ class DisplayUtil {
   //时间戳转日期
   timestampToTime (timestamp:string | number):string {
     // 时间戳为10位需*1000，时间戳为13位不需乘1000
-    var date = new Date(timestamp);
-    var Y = date.getFullYear() + "-";
-    var M =
+    let date = new Date(timestamp);
+    let Y = date.getFullYear() + "-";
+    let M =
       (date.getMonth() + 1 < 10
         ? "0" + (date.getMonth() + 1)
         : date.getMonth() + 1) + "-";
-    var D = (date.getDate() < 10 ? "0" + date.getDate() : date.getDate()) + "";
-    var h = date.getHours() + ":";
-    var m = date.getMinutes() + ":";
-    var s = date.getSeconds();
+    let D = (date.getDate() < 10 ? "0" + date.getDate() : date.getDate()) + "";
+    let h = date.getHours() + ":";
+    let m = date.getMinutes() + ":";
+    let s = date.getSeconds();
     return Y + M + D;
   }
 
@@ -2198,7 +2149,7 @@ class DisplayUtil {
     let maxX = this.rightBottomPoint[0];
     let maxY = this.rightBottomPoint[1];
     let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
-    let bottomHei = 200;
+    let bottomHei = this.bottomHei;
 
     this.addLineEdge([minX, maxY], [minX, maxY + bottomHei]); //左竖线
     this.addLineEdge([maxX, maxY], [maxX, maxY + bottomHei]); //右竖线
@@ -2212,7 +2163,7 @@ class DisplayUtil {
       ['开始时间', '结束时间'],
       ['监理单位', '设计单位'],
     ]
-    let allLen = this.getDateDaySub(this.startDate, this.endDate) + 1 + '天';
+    let allLen = this.getDateDaySub(this.startDate, this.endDate) + '天';
     let bottomValue = [
       [],
       [this.startDate],
@@ -2331,7 +2282,6 @@ class DisplayUtil {
     this.graph.model.beginUpdate()
     this.graph.addCells(cells || [], this.parentCell, null, null, null, false)
     this.graph.moveCells(cells || [], x, y)
-    // this.graph.fit()
     this.graph.model.endUpdate()
   }
 
@@ -2376,7 +2326,7 @@ class DisplayUtil {
   clearGraphModel() {
     if (this.isInit) {
       this.destroyEvents();
-      this.graph.getModel().clear()
+      this.graphModel.clear()
       this.isInit = false;
       this.parentCell = null;
       this.linesArr = [];
@@ -2393,8 +2343,52 @@ class DisplayUtil {
       this.rightBottomPoint = [];
       this.linePointVertex = {};
       this.resultDate = [];
+      this.quyuList = [];
       this.dateMinSub = 1;
     }
+  }
+
+  updateOnLineXml(){
+    this.clearGraphModel();
+    this.getOnlineData(this.singleId);
+  }
+
+  addDialog(type:string, value:any){
+    this.dialogObj[type] = value;
+  }
+
+  focusSerialNumber(serialNumber?:string){
+    this.scaleAndMoveCellToCenter(this.getLineCellBySerialNumber(serialNumber))
+  }
+
+  getLineCellBySerialNumber(serialNumber?:string):any{
+    let lineId = 'line-' + serialNumber;
+    this.focusCellId = lineId;
+    return !serialNumber ? null : this.graphModel.getCell(lineId);
+  }
+
+  scaleAndMoveCellToCenter(cell:any){
+    if(cell){
+      let bounds:any = this.graph.getGraphBounds();
+      let cw = this.graph.container.clientWidth - 1;
+      let ch = this.graph.container.clientHeight - 1;
+      let target = cell.target.geometry;
+      let source = cell.source.geometry;
+      let w = Math.abs(target.x - source.x) + this.pointSize * 2;
+      let h = Math.abs(target.y - source.y) + this.pointSize * 2;
+      let s = Math.min(3, Math.min(cw / w, ch / h));
+      this.graph.view.scaleAndTranslate(s, 0, 0)
+      this.graph.scrollCellToVisible(cell, true);
+    }else{
+      this.graph.fit(10, false, 0, true, false, false);
+    }
+  }
+
+  addFenqu(x:number, y:number, w:number, h:number){
+    let styleStr = "movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;strokeWidth=3;fontSize=25;labelBackgroundColor=none;strokeColor=none;fillColor=#666666;opacity=50;";
+    let id = 'quyu-' + this.quyuList.length
+    console.log(this.graph.insertVertex(this.parentCell, id, null, x, y, w, h, styleStr));
+    this.quyuList.push(id)
   }
 }
 
