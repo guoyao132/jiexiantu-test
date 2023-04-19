@@ -9,4 +9,4 @@ export const getBySingleId =  (data:any) => get({ url: `${baseurl}/scheduleGraph
 export const addDiagram =  (data:any) => get({ url: `${baseurl}/rtSingleArrowDiagram/saveDiagram`, data });
 export const removeDiagram =  (data:any) => get({ url: `${baseurl}/rtSingleArrowDiagram/removeDiagram`, data });
 export const editDiagramTaskName =  (data:any) => post({ url: `${baseurl}/rtSingleArrowDiagram/editTaskName`, data });
-export const editDiagram =  (data:any) => get({ url: `${baseurl}/rtSingleArrowDiagram/editDiagram`, data });
+export const editDiagram =  (data:any) => post({ url: `${baseurl}/rtSingleArrowDiagram/editDiagram`, data });
