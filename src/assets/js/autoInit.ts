@@ -866,7 +866,7 @@ class DisplayUtil {
     for (let id of parentIds) {
       let map:mapType = {};
       let parent = '';
-      let num = '';
+      let num:string | number = '';
       let diagramPlanType = '';
 
       // 判断节点是否包含特殊格式
