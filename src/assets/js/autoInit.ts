@@ -121,6 +121,7 @@ class DisplayUtil {
     this.dialogObj = {};
     this.initScale = 0;
     this.quyuList = [];
+    this.focusCellId = '';
   }
 
   init(query: any) {
