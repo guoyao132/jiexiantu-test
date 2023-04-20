@@ -3860,7 +3860,6 @@ mxGraph.prototype.getImageFromBundles = function(key)
  */
 mxGraph.prototype.orderCells = function(back, cells)
 {
-  console.log(cells);
   if (cells == null)
 	{
 		cells = mxUtils.sortCells(this.getSelectionCells(), true);
@@ -3869,7 +3868,6 @@ mxGraph.prototype.orderCells = function(back, cells)
 	this.model.beginUpdate();
 	try
 	{
-    console.log(cells, back);
     this.cellsOrdered(cells, back);
 		this.fireEvent(new mxEventObject(mxEvent.ORDER_CELLS,
 				'back', back, 'cells', cells));
@@ -3897,7 +3895,6 @@ mxGraph.prototype.cellsOrdered = function(cells, back)
 {
 	if (cells != null)
 	{
-    console.log(cells);
     this.model.beginUpdate();
 		try
 		{

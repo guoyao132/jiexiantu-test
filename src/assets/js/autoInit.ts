@@ -10,7 +10,8 @@ import data5 from './data5'
 import dataOld from './data-1'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import 'element-plus/es/components/message-box/style/css'
-import * as assert from "assert";
+import tool from '../js/tool'
+import type {sendMsgData} from '../js/tool'
 
 const MESSAGE_DURATION: number = 3000;
 
@@ -607,18 +608,95 @@ class DisplayUtil {
         let cellId = cell?.id || '';
         if (cellId.includes('line-')){
           self.scaleAndMoveCellToCenter(cell);
+          let serialNumber = cellId.split('-')[1]
+          self.sendMsg({
+            type: 'lineClick',
+            serialNumber: serialNumber,
+          });
         }
       }
     };
     this.graph.addListener(window.mxEvent.CLICK, CLICK_Listener);
     this.graphEventList.push(CLICK_Listener)
-    const SCALE_Listener = (sender: any, evt: any) => {
-      console.log(sender);
-      console.log(evt);
-    }
-    this.graph.view.addListener(window.mxEvent.SCALE, SCALE_Listener);
-    this.graphModelEventList.push(SCALE_Listener)
 
+    const CHANGE_Listener = function (sender: any, evt: any) {
+      let changes = evt.getProperty('edit').changes;
+      changes.forEach((change: any) => {
+        let previous = change.previous;
+        let value = change.value;
+        let cell = change.cell
+        let cellId = cell?.id || '';
+        if (cellId.includes('point-')) {
+          cell.geometry.x = change.previous.x;
+        } else if (cellId.includes('line-')) {
+          let serialNumber = cellId.split('-')[1]
+          let obj = self.resultDate.find((r: any) => serialNumber == r.serialNumber);
+          if (value && previous != value && obj) {
+            let oldName = obj.taskName;
+            if (value === oldName) {
+              return
+            }
+            ElMessageBox.confirm(`确认将任务 ${oldName} 改为 ${value} 吗？`, '提示', {
+              confirmButtonText: '确认',
+              cancelButtonText: '取消',
+              autofocus: false,
+            }).then(() => {
+              let id = self.getIdBySerialNumber(serialNumber)
+              editDiagramTaskName({
+                id: id,
+                taskName: value,
+              }).then(() => {
+                obj.taskName = value;
+                self.sendMsg({
+                  type: 'update',
+                  updateTypa: 'taskName',
+                });
+              })
+            }).catch(() => {
+              self.graph.getModel().setValue(cell, previous);
+            })
+          }
+        } else if (cellId.includes('gongqi-')) {
+          let setValue = Number(value);
+          if (isNaN(setValue)) {
+            ElMessage.error({
+              message: '请输入正确格式的工期！',
+              duration: MESSAGE_DURATION,
+              showClose: true,
+            })
+          } else {
+            let serialNumber = cellId.split('-')[1]
+            let obj = self.resultDate.find((r: any) => serialNumber == r.serialNumber);
+            if (value && previous != value && obj) {
+              let oldduration = obj.duration;
+              if (oldduration == value) {
+                return;
+              }
+              let taskName = obj.taskName;
+              ElMessageBox.confirm(`确认将任务 ${taskName} 工期改为改为 ${value} 吗？`, '提示', {
+                confirmButtonText: '确认',
+                cancelButtonText: '取消',
+                autofocus: false,
+              }).then(() => {
+                let id = self.getIdBySerialNumber(serialNumber)
+                obj.duration = value;
+                self.changeGongqi(id, value);
+              }).catch((err) => {
+                console.error(err);
+                self.graph.getModel().setValue(cell, previous);
+              })
+            }
+
+
+          }
+        }
+      })
+    }
+    this.graph.getModel().addListener(window.mxEvent.CHANGE, CHANGE_Listener);
+    this.graphModelEventList.push(CHANGE_Listener)
+
+    tool.removeListenerMessage();
+    this.addListenerMessage();
 
     // const self = this;
     // const container = this.graph.container;
@@ -677,6 +755,10 @@ class DisplayUtil {
     const d = new Date(obj.planStartDate);
     obj.planEndDate = this.timestampToTime(d.setDate(d.getDate() + (Number(obj.duration) - 1)));
     editDiagram(obj).then(() => {
+      this.sendMsg({
+        type: 'update',
+        updateTypa: 'duration',
+      });
       this.updateOnLineXml();
     })
   }
@@ -2388,8 +2470,29 @@ class DisplayUtil {
   addFenqu(x:number, y:number, w:number, h:number){
     let styleStr = "movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;strokeWidth=3;fontSize=25;labelBackgroundColor=none;strokeColor=none;fillColor=#666666;opacity=50;";
     let id = 'quyu-' + this.quyuList.length
-    console.log(this.graph.insertVertex(this.parentCell, id, null, x, y, w, h, styleStr));
     this.quyuList.push(id)
+  }
+
+  sendMsg(obj:sendMsgData){
+    console.log('给父级发送消息', JSON.stringify(obj));
+    tool.sendMsg(obj);
+  }
+
+  addListenerMessage(){
+    tool.listenerMessage((data) => {
+      console.log('接收到父级消息', data)
+      let d = data.data;
+      let type = d.type;
+      switch (type) {
+        case 'lineClick':
+          let serialNumber = d.serialNumber;
+          this.focusSerialNumber(serialNumber);
+          break;
+        case 'update':
+          this.updateOnLineXml();
+          break;
+      }
+    })
   }
 }
 

@@ -18,7 +18,6 @@ const deleteMainText:Ref<HTMLElement | null> = ref(null);
 const okFun = () => {
   let lineIds = deleteMainText.value?.dataset.ids?.split(',').map((lineId:string) => lineId.split('-')[1]) || [];
   let ids = displayUtil.resultDate.filter((r:any) => lineIds.includes(r.serialNumber)).map((i:any) => i.id || '');
-  console.log(ids);
   let index = 0;
   ids.forEach((id:string) => {
     removeDiagram({

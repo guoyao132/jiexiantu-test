@@ -137,7 +137,6 @@ const submit = () => {
           eObj = v;
         }
       })
-      console.log(eObj);
       if(eObj){
         // planLevel 层级为上一条数据的层级
         // splitParentId  父节点序号为上一条数据的父节点

@@ -76,7 +76,6 @@ Actions.prototype.init = function () {
         const svgXml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
           '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + mxUtils.getXml(graph.getSvg(null, null, null, null, null,
             null, null, null, null, null))
-        console.log(svgXml);
         ui.$api.saveScheduleGraph({
           singleId: ui.$route.singleId,
           graphType: 1,
@@ -85,7 +84,9 @@ Actions.prototype.init = function () {
           svgXml: svgXml,
         }).then(resp => {
           let result = resp.result;
-          console.log(result);
+          ui.$ElMessageBox.alert('保存成功！', '提示', {
+            confirmButtonText: '确定',
+          })
         })
       }
     }), '名称', null);
@@ -238,6 +239,10 @@ Actions.prototype.init = function () {
               ui.$displayUtil.editorUi.hideDialog();
               ui.$displayUtil.clearGraphModel();
               ui.$displayUtil.getOnlineData(ui.$displayUtil.singleId);
+              ui.$displayUtil.sendMsg({
+                type: 'update',
+                updateTypa: 'deleteLine',
+              });
             }
           })
         })
