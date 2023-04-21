@@ -80,12 +80,10 @@ const init = async () => {
   }
   displayUtil.addDialog('addDialog', dialogVisible);
 }
-watch(query,v => {
-  init();
-})
+// watch(query,v => {
+//   init();
+// })
 init();
-
-
 const formCon = ref<FormInstance>()
 const dialogVisible = ref(false)
 const form = reactive({

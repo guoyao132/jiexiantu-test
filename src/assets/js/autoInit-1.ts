@@ -557,8 +557,6 @@ class DisplayUtil {
     this.setDateSub();
     this.formataLines();
     this.formatData();
-    this.addMoreStartPoint();
-    this.changePointYSort()
     this.addLineLevel();
     this.graphModel.beginUpdate()
     this.addAllEdge();
@@ -606,9 +604,10 @@ class DisplayUtil {
     let CLICK_Listener = function (sender: any, evt: any) {
       let e = evt.getProperty('event'); // mouse event
       let cell = evt.getProperty('cell'); // cell may be null
-      if (cell) {
+      if(e.button === 0){
         let cellId = cell?.id || '';
-        if (cellId.includes('line-')){
+        if (cellId && cellId.includes('line-') && self.focusCellId !== cellId) {
+          self.focusCellId = cellId;
           self.scaleAndMoveCellToCenter(cell);
           let serialNumber = cellId.split('-')[1]
           self.sendMsg({
@@ -1087,10 +1086,9 @@ class DisplayUtil {
     this.needUpLevelData = [];
     this.pointLevelObj = {};
     this.lineLevelObj = {};
-    let waitArr: number[] = [];
     this.liuchengData.forEach(v => {
       v.len = this.getDateDaySub(v.date, this.startDate);
-      this.changePointLeval(v.id, false, waitArr)
+      this.changePointLeval(v.id)
     })
     this.needUpLevelData.reverse();
     this.needUpLevelData.forEach((v: any) => {
@@ -1102,8 +1100,204 @@ class DisplayUtil {
     let addLineArr: any = [];
     let lineLevelObj: any = {};
     this.linesArr.forEach((val: any) => {
-
+      if (val.taskName === '-1') {
+        return;
+      }
+      let lineBiaoshi = `${val.id}-${val.toId}`;
+      let objStart = this.liuchengData.find((v => v.id === val.id));
+      let objEnd = this.liuchengData.find((v => v.id === val.toId));
+      let objStartLines = objStart?.lines;
+      if (objStartLines && objStartLines.length >= 1) {
+        let sLeval = this.pointLevelObj[val.id] || 0;
+        let eLevel = this.pointLevelObj[val.toId];
+        let sDate = Date.parse(objStart?.date || '');
+        let eDate = Date.parse(objEnd?.date || '');
+        let level = sLeval;
+        if (Math.abs(sLeval) < Math.abs(eLevel)) {
+          level = eLevel;
+        }
+        this.upTopLevelPoint(sDate, eDate, level, val.id, val.toId, val, lineLevelObj);
+      }
     })
+    let upArr = [];
+    let levelEqual: any = {};
+    let keys = Object.keys(lineLevelObj);
+    let lineLevelObjValues = Object.values(lineLevelObj);
+    let hasLevel: any = [];
+    let levelObjArr: any = [];
+    let lineLevelObjNew: any = {};
+    let parentLineUp = (v: number, value: any, is = false) => {
+      if (hasLevel.includes(v)) {
+        let index = hasLevel.findIndex((l: any) => l === v);
+        let levelObj = levelObjArr[index];
+        let obj = levelObj[levelObj.length - 1];
+        let lastTime = Math.max(...obj.slice(1).map((o: any) => o.eDate));
+        let startTime = Math.min(...obj.slice(1).map((o: any) => o.sDate));
+        let sDate = value[1].sDate;
+        let eDate = value[1].eDate;
+        if (lastTime > sDate || eDate < lastTime) {
+          let d = 1;
+          if (obj[0] < 0) {
+            d = -1;
+          }
+          let valSmalLastTime = Math.min(...obj.slice(1).map((o: any) => o.eDate));
+          let upV = obj[0] + (d * obj.length - 1);
+          let valueLinshi = value;
+          let objLinshi = obj;
+          if (lastTime - startTime > valSmalLastTime - sDate) {
+            valueLinshi = obj;
+            objLinshi = value;
+            upV = objLinshi[0] + (d * value.length - 1);
+          }
+          valueLinshi[0] = upV;
+          let changeObjArr = valueLinshi.slice(1).map((l: any) => l.changeId);
+          changeObjArr.forEach((ids: number[]) => {
+            ids.forEach((id: number) => {
+              this.pointLevelObj[id] = this.getUpPointLevel(this.pointLevelObj[id], objLinshi.length - 2);
+            })
+          })
+          let minL = valueLinshi[0];
+          let maxL = valueLinshi[0] + valueLinshi.length - 2;
+          if (hasLevel.includes(upV)) {
+            let valueNew = lineLevelObjValues.find((l: any) => l[0] === upV);
+            let i = hasLevel.findIndex((l: any) => l === upV);
+            levelObjArr.splice(i, 1, [valueLinshi]);
+            parentLineUp(upV, valueNew, true)
+          } else {
+            hasLevel.push(upV);
+            levelObjArr.push([valueLinshi]);
+          }
+          let needAdd = lineLevelObjValues.filter((l: any) => l[0] > minL && l[0] <= maxL);
+          let needAddLeval = maxL + 1;
+          needAdd.forEach((n: any) => {
+            n[0] = needAddLeval;
+            if (hasLevel.includes(needAddLeval)) {
+              let valueNew = lineLevelObjValues.find((l: any) => l[0] === needAddLeval);
+              let i = hasLevel.findIndex((l: any) => l === needAddLeval);
+              levelObjArr.splice(i, 1, [n]);
+              parentLineUp(needAddLeval, valueNew, true)
+            } else {
+              hasLevel.push(needAddLeval);
+              levelObjArr.push([n]);
+            }
+          })
+
+        }
+      } else {
+        hasLevel.push(v);
+        levelObjArr.push([value]);
+      }
+    }
+    for (let key of keys) {
+      let value = lineLevelObj[key];
+      let o = value;
+      let v = value[0];
+      parentLineUp(v, value);
+    }
+    for (let key of keys) {
+      let value = lineLevelObj[key];
+      lineLevelObjNew[key] = value.map((v: any) => {
+        if (v.taskName) {
+          return v.taskName
+        } else {
+          return v;
+        }
+      })
+    }
+    this.lineLevelObj = lineLevelObjNew;
+    this.addMoreStartPoint();
+    this.changePointYSort()
+  }
+
+  upTopLevelPoint(sDate: number, eDate: number, level: number, id: number, toId: number, lineObj: any, lineLevelObj: any) {
+    let needAddArr = this.liuchengData.filter((d: LiuChengData) => {
+      let time = Date.parse(d.date);
+      let l: number = this.pointLevelObj[d.id];
+      if (time > sDate && time < eDate && l === level) {
+        return true
+      } else {
+        return false
+      }
+    })
+    if (needAddArr.length > 0) {
+      let maxLeval = Math.max(...needAddArr.map((n: any) => this.pointLevelObj[n.id]));
+      let lineBiaoshi = `${id}-${toId}`;
+      let sub = 0;
+      let startLeval = 1;
+      if (level !== 0) {
+        if (level > 0) {
+          startLeval = level + 1;
+        } else {
+          startLeval = level - 1;
+        }
+      }
+
+
+      let maxStartLeval = level;
+      let lineInPoint = this.liuchengData.filter((d: LiuChengData) => {
+        let time = Date.parse(d.date);
+        let arr: any = [];
+        this.getAllToZeorPoints(d.id, arr, true);
+        let ids = arr.map((val: any) => val.toId);
+        ids = [...new Set(ids)]
+        let timeIds = this.getDateById(ids);
+        let lastTime = timeIds.length === 0 ? 0 : Math.max(...timeIds.map(v => v.time));
+        if (time >= sDate && lastTime !== 0 && lastTime <= eDate) {
+          return true
+        }
+        return false
+      });
+      let lineInPointLeval: number[] = lineInPoint.map((d: any) => this.pointLevelObj[d.id]);
+      if (lineInPoint.length != 0) {
+        maxStartLeval = Math.max(...lineInPointLeval) + 1;
+      }
+
+      let changeId: number[] = [];
+      this.liuchengData.forEach((d: LiuChengData) => {
+        let time = Date.parse(d.date);
+        let l: number = this.pointLevelObj[d.id];
+        let arr: any = [];
+        this.getAllToZeorPoints(d.id, arr, true);
+        let ids = arr.map((val: any) => val.toId);
+        ids = [...new Set(ids)]
+        let timeIds = this.getDateById(ids);
+        let lastTime = Math.max(...timeIds.map(v => v.time));
+        let isLevel = level === 0 ? l > level : Math.abs(l) >= Math.abs(level);
+        if (startLeval === 0) {
+          isLevel = Math.abs(l) >= Math.abs(maxStartLeval);
+        }
+        if (lineInPoint.length != 0 && Math.abs(startLeval) < Math.abs(maxStartLeval) && ((l > 0 && maxStartLeval > 0) || (l <= 0 && maxStartLeval <= 0))) {
+          isLevel = Math.abs(l) >= Math.abs(maxStartLeval - 1);
+        }
+        if (time <= eDate && isLevel && lastTime > sDate && lastTime !== eDate) {
+          let num = 1;
+          if (startLeval === 0) {
+            num = 2;
+          }
+          this.pointLevelObj[d.id] = this.getUpPointLevel(this.pointLevelObj[d.id], num);
+          changeId.push(d.id);
+        }
+      })
+      let obj = {
+        ...lineObj,
+        sDate,
+        eDate,
+        changeId,
+      }
+      if (startLeval === 0) {
+        startLeval = 1;
+      }
+      if (lineInPoint.length != 0 && Math.abs(startLeval) < Math.abs(maxStartLeval)) {
+        startLeval = maxStartLeval;
+      }
+
+      // let obj = lineObj.taskName;
+      if (lineLevelObj[id]) {
+        lineLevelObj[id].push(obj)
+      } else {
+        lineLevelObj[id] = [startLeval, obj];
+      }
+    }
   }
 
   addMoreStartPoint() {
@@ -1271,14 +1465,25 @@ class DisplayUtil {
             l = max - 1;
           }
           if (max - min === 1) {
-            let maxObj = lines.find((id: any) => this.pointLevelObj[id] === max);
-            maxObj && this.upPointLevelAndChild(maxObj, max + 1)
-            // this.pointLevelObj[maxObj] =  max + 1;
+            // let chanegId = lines.filter((id:any) => this.pointLevelObj[id] === max);
+            this.pointLevelObj[key] = max + 1;
             l = max;
           }
           changeLine.push(...lines.map((v: any) => `${v}-${key}`))
+
           if (l !== this.pointLevelObj[key]) {
-            this.upPointLevelAndChild(Number(key), l)
+            this.pointLevelObj[key] = l;
+            let dArr = this.liuchengData.filter((d: any) => {
+              let lineIds = d.lines.map((l: any) => l.toId);
+              let isHas = false;
+              lineIds.forEach((id: number) => {
+                if (lines.includes(id)) {
+                  isHas = true
+                }
+              })
+              return isHas;
+            })
+            // this.upPrevLeval(v.id, v.level, v.toId);
           }
         }
       }
@@ -1298,13 +1503,11 @@ class DisplayUtil {
           l = max - 1;
         }
         if (max - min === 1) {
-          let maxObj = lines.find((id: any) => this.pointLevelObj[id] === max);
-          maxObj && this.upPointLevelAndChild(maxObj, max + 1)
+          let chanegId = lines.filter((id: any) => this.pointLevelObj[id] === max);
+          // this.pointLevelObj[chanegId] = max + 1;
           l = max;
         }
-        if (this.pointLevelObj[key] !== l) {
-          this.upPointLevelAndChild(Number(key), l)
-        }
+        // this.pointLevelObj[key] = l;
       }
     })
   }
@@ -1321,16 +1524,8 @@ class DisplayUtil {
   }
 
   // 计算需要修改层级的点位
-  changePointLeval(id: number, change = false, waitArr: number[]) {
-    let idLevel = this.pointLevelObj[id];
-    if (idLevel === undefined) {
-      if (id === 0 || id === 1) {
-        idLevel = 0;
-      } else {
-        waitArr.push(id);
-        return
-      }
-    }
+  changePointLeval(id: number, change = false) {
+    let idLevel = this.pointLevelObj[id] || 0;
     let lineArr = this.linesArr.filter((val: any) => (val.id === id));
     lineArr.sort((v: any) => {
       if (v.type === 0) {
@@ -1433,7 +1628,7 @@ class DisplayUtil {
               }
             })
           })
-          this.changePointLeval(v.toId, true, waitArr);
+          this.changePointLeval(v.toId, true);
         }
 
         let lineArrIds = new Set(lineArr.map((a: any) => a.toId));
@@ -1446,14 +1641,6 @@ class DisplayUtil {
         }
       }
     })
-
-    waitArr.forEach((wid: number, i) => {
-      if (this.pointLevelObj[wid] !== undefined) {
-        waitArr.splice(i, 1);
-        this.changePointLeval(wid, false, waitArr);
-      }
-    })
-
   }
 
   // 将需要修改层级的点位 修改层级
@@ -2255,7 +2442,11 @@ class DisplayUtil {
   }
 
   focusSerialNumber(serialNumber?:string){
-    this.scaleAndMoveCellToCenter(this.getLineCellBySerialNumber(serialNumber))
+    let cell = this.getLineCellBySerialNumber(serialNumber);
+    if(cell){
+      this.graph.setSelectionCell(cell);
+    }
+    this.scaleAndMoveCellToCenter(cell)
   }
 
   getLineCellBySerialNumber(serialNumber?:string):any{
@@ -2274,7 +2465,7 @@ class DisplayUtil {
       let w = Math.abs(target.x - source.x) + this.pointSize * 2;
       let h = Math.abs(target.y - source.y) + this.pointSize * 2;
       let s = Math.min(3, Math.min(cw / w, ch / h));
-      this.graph.view.scaleAndTranslate(s, 0, 0)
+      this.graph.view.setScale(s)
       this.graph.scrollCellToVisible(cell, true);
     }else{
       this.graph.fit(10, false, 0, true, false, false);
