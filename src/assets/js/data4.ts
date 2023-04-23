@@ -137,4 +137,21 @@ export default [{
   "planStartDate": 1681660800000,
   "planEndDate": 1683993600000,
   "direction": "2"
+}, {
+  "ff": 0,
+  "ef": 43,
+  "serialNumber": "9",
+  "runType": "1",
+  "ls": 38,
+  "isPivotal": "0",
+  "es": 33,
+  "parentId": "3,4,7,8",
+  "duration": 1,
+  "tf": 5,
+  "y": 0,
+  "lf": 48,
+  "taskName": "结束",
+  "planStartDate": 1683993600000 + 24 * 60 * 60 * 1000,
+  "planEndDate": 1683993600000 + 24 * 60 * 60 * 1000,
+  "direction": "2"
 }]

@@ -659,7 +659,7 @@ class DisplayUtil {
     this.formataLines();
     this.formatData();
     this.changePointYSort()
-    this.addLineLevel();
+    // this.addLineLevel();
     this.addMoreStartPoint();
     this.graphModel.beginUpdate()
     this.addAllEdge();
@@ -1195,6 +1195,7 @@ class DisplayUtil {
       this.changePointLeval(v.id, false, waitArr)
     })
     this.needUpLevelData.reverse();
+    console.log(this.needUpLevelData);
     this.needUpLevelData.forEach((v: any) => {
       this.upPrevLeval(v.id, v.level, v.toId);
     })
@@ -1204,17 +1205,82 @@ class DisplayUtil {
     let addLineArr: any = [];
     let lineLevelObj: any = {};
     console.log(this.linesArr);
+    console.log(this.liuchengData);
     this.linesArr.forEach((l: any) => {
       let sLevel = this.pointLevelObj[l.id] || 0;
       let eLevel = this.pointLevelObj[l.toId] || 0;
-      let level:number | null = null;
+      let level:number;
       if (((sLevel >= 0 && eLevel >= 0) || (sLevel <= 0 && eLevel <= 0)) && Math.abs(sLevel) <= Math.abs(eLevel)) {
         level = eLevel;
-      } else if (sLevel !== eLevel) {
+      // } else if (sLevel !== eLevel) {
+      //   level = sLevel;
+      }else{
         level = sLevel;
       }
-
+      let lineBiaoshi = `${l.id}-${l.toId}`;
+      let newLeval = this.upLineLevel(l, level);
+      if(newLeval !== level){
+        let value = [newLeval, l.taskName];
+        if(lineLevelObj[lineBiaoshi]){
+          lineLevelObj[lineBiaoshi].push(value)
+        }else{
+          lineLevelObj[lineBiaoshi] = [value];
+        }
+      }
     })
+    console.log(lineLevelObj);
+    this.lineLevelObj = lineLevelObj;
+  }
+
+  upLineLevel(line:any, nowLevel: number){
+    let id = line.id;
+    let toId = line.toId;
+    let lineBiaoshi = `${id}-${toId}`;
+    let sDateTime:number = Date.parse(line.sDate);
+    let eDateTime:number = Date.parse(line.eDate);
+    let lineHasPoint = this.liuchengData.filter((d:LiuChengData) => {
+      let date:number = Date.parse(d.date);
+      let i = d.id;
+      let l = this.pointLevelObj[d.id] || 0;
+      return i !== id && i !== toId && date > sDateTime && date < eDateTime && l === nowLevel;
+    })
+    if(lineHasPoint.length !== 0){
+      let lastTime = this.getPointLastTime(id);
+      let levelArr:number[] = [];
+      lineHasPoint.forEach((p:any) => {
+        let pLastTime = this.getPointLastTime(p.id);
+        let pLevel = this.pointLevelObj[p.id] || 0;
+        let upLeval = this.getUpPointLevel(nowLevel);
+        levelArr.push(this.upLineLevel(line, upLeval));
+        // if(pLevel === 0 || pLastTime < lastTime){
+        //   console.log('level line')
+        //   let upLeval = this.getUpPointLevel(nowLevel);
+        //   levalArr.push(this.upLineLevel(line, upLeval));
+        // }else{
+        //   console.log('level point')
+        // }
+      })
+      let minLevel = Math.min(...levelArr);
+      let maxLevel = Math.max(...levelArr);
+      let level:number;
+      if(minLevel < 0 && maxLevel < 0){
+        level = minLevel;
+      }else{
+        level = maxLevel;
+      }
+      return level;
+    }else {
+      return nowLevel;
+    }
+  }
+
+  getPointLastTime(id: number){
+    let lineEndPointArr:any = []
+    this.getAllToZeorPoints(id, lineEndPointArr, true);
+    let ids = lineEndPointArr.map((val: any) => val.toId);
+    ids = [...new Set(ids)]
+    let timeIds = this.getDateById(ids);
+    return Math.max(...timeIds.map(v => v.time));
   }
 
   // 当有多个起点时，将其按照顺序排列
@@ -1454,6 +1520,15 @@ class DisplayUtil {
       }
     })
     lineArr.sort((v1: any, v2:any) => {
+      if (Date.parse(v1.sDate) > Date.parse(v2.sDate)) {
+        return 1;
+      } else if (v1.sDate === v2.sDate) {
+        return 0;
+      } else {
+        return -1;
+      }
+    })
+    lineArr.sort((v1: any, v2:any) => {
       if (v1.level === 1 && v2.level !== 1) {
         return -1;
       } else if(v1.level === 1 && v2.level === 1){
@@ -1462,17 +1537,23 @@ class DisplayUtil {
         return 1;
       }
     })
+
     let hasId: number[] = [];
     let startPoint: LiuChengData | undefined = this.liuchengData.find((d: any) => d.id === 0);
     let pLevelAll:number[] = [];
     let lIndex = 0;
-    lineArr.forEach((v: any, i: number) => {
-      if (hasId.includes(v.toId)) {
-        return
-      }
-      hasId.push(v.toId);
-
-      const getLevel = ():number => {
+    const getLevel = ():number => {
+      if(idLevel !== 0){
+        let level = idLevel;
+        if (lIndex !== 0) {
+          if (level < 0) {
+            level--;
+          } else {
+            level++;
+          }
+        }
+        return level;
+      }else{
         let level = Math.ceil(lIndex / 2);
         if (lIndex % 2 === 0 && level !== 0) {
           level *= -1;
@@ -1484,36 +1565,30 @@ class DisplayUtil {
         lIndex++;
         return level;
       }
-      const getLevel2 = (level:number):number => {
-        if(pLevelAll.includes(level)){
-          let l = this.getUpPointLevel(level);
-          return getLevel2(l);
-        }else{
-          return level;
-        }
+    }
+    const getLevel2 = (level:number):number => {
+      if(pLevelAll.includes(level)){
+        let l = this.getUpPointLevel(level);
+        return getLevel2(l);
+      }else{
+        return level;
       }
-      if (idLevel !== 0) {
-        let level = idLevel;
-        if (i !== 0) {
-          if (level < 0) {
-            level--;
-          } else {
-            level++;
-          }
-        }
-        if (change && this.pointLevelObj[v.toId] !== undefined) {
-          this.pointLevelObj[v.toId] = level;
-        } else if (this.pointLevelObj[v.toId] === undefined) {
-          this.pointLevelObj[v.toId] = level;
-        }
-      } else {
-        let parents = this.liuchengData.filter((d:any) => {
-          let toIds = d.lines.map((l:any) => l.toId)
-          return toIds.includes(v.toId) && d.id !== id;
-        })
-        let level:number;
-        if(parents.length !== 0 && i !== 0){
-          let levels = parents.map((p:any) => this.pointLevelObj[p.id] || null).filter(((l:any) => l !== null));
+    }
+    lineArr.forEach((v: any, i: number) => {
+      if (hasId.includes(v.toId)) {
+        lIndex++;
+        return
+      }
+      hasId.push(v.toId);
+
+      let parents = this.liuchengData.filter((d:any) => {
+        let toIds = d.lines.map((l:any) => l.toId)
+        return toIds.includes(v.toId) && d.id !== id;
+      })
+      let level:number;
+      if(parents.length !== 0 && i !== 0){
+        let levels = parents.map((p:any) => this.pointLevelObj[p.id] || null).filter(((l:any) => l !== null));
+        if(levels.length !== 0){
           let min = Math.min(...levels);
           let max = Math.min(...levels);
           if(min >= 0 && max >= 0){
@@ -1527,47 +1602,64 @@ class DisplayUtil {
         }else{
           level = getLevel();
         }
-        pLevelAll.push(level);
+      }else{
+        level = getLevel();
+      }
+      pLevelAll.push(level);
 
+      if (idLevel !== 0) {
+        if (change && this.pointLevelObj[v.toId] !== undefined) {
+          this.pointLevelObj[v.toId] = level;
+        } else if (this.pointLevelObj[v.toId] === undefined) {
+          this.pointLevelObj[v.toId] = level;
+        }else{
+          this.pointLevelObj[v.toId] = level;
+        }
+      } else {
         if (startPoint) {
           level = i;
         }
-
         let oldLevel = this.pointLevelObj[v.toId];
         if (oldLevel !== 0) {
           this.pointLevelObj[v.toId] = level;
-          let needUpLevelDataArr = this.needUpLevelData.filter((n: any) => v.toId === n.toId)
-          if (needUpLevelDataArr.length !== 0) {
-            if (level === 0) {
-              this.needUpLevelData = this.needUpLevelData.filter((n: any) => v.toId !== n.toId)
-              needUpLevelDataArr.forEach((n: any) => {
-                let id = n.id;
-                let obj: LiuChengData | undefined = this.liuchengData.find((d: any) => d.id === id);
-                let linesIds = obj?.lines?.map((ll: any) => ll.toId);
-                let changLevel = n.level;
-                linesIds?.forEach((lid: number) => {
-                  let l = this.pointLevelObj[lid];
-                  if (Math.abs(l) >= Math.abs(changLevel)) {
-                    if (changLevel > 0) {
-                      if (l < 0) {
-                        this.pointLevelObj[lid] = -this.pointLevelObj[lid];
-                      } else {
-                        this.pointLevelObj[lid] = -(this.pointLevelObj[lid] - 1);
-                      }
-                    } else {
-                      if (Math.abs(l) !== Math.abs(changLevel)) {
-                        if (l < 0) {
-                          this.pointLevelObj[lid] = -this.pointLevelObj[lid];
-                        } else {
-                          this.pointLevelObj[lid] = -(this.pointLevelObj[lid] - 1);
-                        }
-                      }
-                    }
-                  }
-                })
-              })
-            }
-          }
+          // let needUpLevelDataArr = this.needUpLevelData.filter((n: any) => v.toId === n.toId)
+          // if (needUpLevelDataArr.length !== 0) {
+          //   console.log(id, v.toId, needUpLevelDataArr);
+          //   if (level === 0) {
+          //     console.log(JSON.parse(JSON.stringify(this.needUpLevelData)))
+          //     this.needUpLevelData = this.needUpLevelData.filter((n: any) => v.toId !== n.toId)
+          //     console.log(JSON.parse(JSON.stringify(this.needUpLevelData)))
+          //     needUpLevelDataArr.forEach((n: any) => {
+          //       console.log(n);
+          //       let id = n.id;
+          //       let obj: LiuChengData | undefined = this.liuchengData.find((d: any) => d.id === id);
+          //       console.log(obj);
+          //       let linesIds = obj?.lines?.map((ll: any) => ll.toId);
+          //       let changLevel = n.level;
+          //       console.log(changLevel);
+          //       linesIds?.forEach((lid: number) => {
+          //         let l = this.pointLevelObj[lid];
+          //         if (Math.abs(l) >= Math.abs(changLevel)) {
+          //           if (changLevel > 0) {
+          //             if (l < 0) {
+          //               this.pointLevelObj[lid] = -this.pointLevelObj[lid];
+          //             } else {
+          //               this.pointLevelObj[lid] = -(this.pointLevelObj[lid] - 1);
+          //             }
+          //           } else {
+          //             if (Math.abs(l) !== Math.abs(changLevel)) {
+          //               if (l < 0) {
+          //                 this.pointLevelObj[lid] = -this.pointLevelObj[lid];
+          //               } else {
+          //                 this.pointLevelObj[lid] = -(this.pointLevelObj[lid] - 1);
+          //               }
+          //             }
+          //           }
+          //         }
+          //       })
+          //     })
+          //   }
+          // }
         }
         if (oldLevel !== undefined && level !== 0) {
           let arr = this.liuchengData.filter((d: any) => (d.lines.map((l: any) => l.toId)).includes(v.toId) && d.id !== id)
@@ -1617,6 +1709,7 @@ class DisplayUtil {
       }
     })
     parentPoint = [...new Set(parentPoint)]
+    console.log(id, parentPoint);
     if (parentPoint.length !== 0) {
       let setObj = this.liuchengData.find((val => val.id === setId));
       let idObj = this.liuchengData.find((val => val.id === id));
@@ -1627,7 +1720,7 @@ class DisplayUtil {
         let lines = obj?.lines;
         lines?.forEach((line: any) => {
           let l = this.pointLevelObj[line.toId] || 0;
-          if (l >= level && l !== 0) {
+          if (l > level && l !== 0) {
             let arr: any = [];
             this.findLastZeroPoint(line.toId, arr);
             let ids = arr.map((val: any) => val.toId || val);
@@ -1706,7 +1799,7 @@ class DisplayUtil {
           return;
         }
         arr.push(v);
-        this.getAllToZeorPoints(v.toId, arr, isZero);
+        this.getAllToZeorPoints(v.toId, arr, isZero, isNoLs);
       }
     })
     return arr;
@@ -1889,17 +1982,17 @@ class DisplayUtil {
       //     }
       //   }
       // }
-      if (this.lineLevelObj[val.id]) {
-        let index = this.lineLevelObj[val.id].findIndex((lId: any) => lId === val.taskName);
-        if (index !== -1) {
-          let l = this.lineLevelObj[val.id][0];
+      if (this.lineLevelObj[lineBiaoshi]) {
+        let lineLevelArr = this.lineLevelObj[lineBiaoshi];
+        let lineLevel = lineLevelArr.find((lv :any) => lv[1] === val.taskName);
+        if(lineLevel){
+          let lineLevelNum = lineLevel[0];
           let d = 1;
-          if (l < 0) {
+          if (lineLevelNum < 0) {
             d = -1;
           }
-          let startLeval = l + d * (index - 1);
           point = [
-            [x1 + (exitX * this.pointSize), (entryY * this.pointSize) + this.ySubLength * startLeval],
+            [x1 + (exitX * this.pointSize), (entryY * this.pointSize) + this.ySubLength * lineLevelNum],
           ];
         }
       }
