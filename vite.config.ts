@@ -13,8 +13,8 @@ export default defineConfig(({mode}: ConfigEnv) => {
     base: './',
     server: {
       proxy: {
-        '/rtSingleArrowDiagram': 'http://172.18.8.180:9030',
-        '/scheduleGraph': 'http://172.18.8.180:9030'
+        '/rtSingleArrowDiagram': 'http://172.18.8.243:9030',
+        '/scheduleGraph': 'http://172.18.8.243:9030'
       }
 
     },

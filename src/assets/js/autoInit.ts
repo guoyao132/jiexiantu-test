@@ -80,7 +80,7 @@ class DisplayUtil {
   initScale: number;
   quyuList: any;
   focusCellId: string;
-
+  allLinePoint:number[][];
   constructor() {
     this.editorUi = null;
     this.graph = null;
@@ -124,6 +124,7 @@ class DisplayUtil {
     this.initScale = 0;
     this.quyuList = [];
     this.focusCellId = '';
+    this.allLinePoint = [];
   }
 
   init(query: any) {
@@ -383,8 +384,6 @@ class DisplayUtil {
                   level: v.isPivotal === '1' ? 1 : 0,
                   taskName: 'SS',
                 })
-                obj1.serialNumber = addLineId;
-
                 let eObjSS: any = {
                   parentSerialNumber: addLineId,
                   date: sDate,
@@ -672,10 +671,11 @@ class DisplayUtil {
     })
     this.setDateSub();
     this.formataLines();
+    this.getAllPointByLineId();
     this.formatData();
     this.changePointYSort()
-    // this.addLineLevel();
     this.addMoreStartPoint();
+    this.addLineLevel();
     this.graphModel.beginUpdate()
     this.addAllEdge();
     this.addPointCell();
@@ -1143,12 +1143,8 @@ class DisplayUtil {
       let sDate = v.date;
       v.lines?.forEach(val => {
         let eDate;
-        if (val.date) {
-          eDate = val.date;
-        } else {
-          let toObj = this.liuchengData.find(l => l.id === val.toId);
-          eDate = toObj?.date;
-        }
+        let toObj = this.liuchengData.find(l => l.id === val.toId);
+        eDate = toObj?.date;
         // let level = toObj?.level || 0;
         let len = -1;
         if (sDate && eDate) {
@@ -1159,7 +1155,9 @@ class DisplayUtil {
           id: v.id,
           lineLen: len,
           sDate: sDate,
+          sDateTime: Date.parse(sDate),
           eDate: eDate,
+          eDateTime: Date.parse(eDate || ''),
         })
       })
     })
@@ -1182,14 +1180,14 @@ class DisplayUtil {
     // let canAddSubLineDate = canAddSubLine.map((v:any) => v.sDate + '-' + v.eDate + ', ' + v.id + '-' + v.toId);
     this.needAddSubDate = [...canAddSubLine];
     this.linesArr.sort((v1: any, v2: any) => {
-      if (Date.parse(v1.eDate) > Date.parse(v2.eDate)) {
+      if (v1.eDateTime > v2.eDateTime) {
         return 1;
       } else {
         return -1;
       }
     })
     this.linesArr.sort((v1: any, v2: any) => {
-      if (Date.parse(v1.sDate) > Date.parse(v2.sDate)) {
+      if (v1.sDateTime > v2.sDateTime) {
         return 1;
       } else if (v1.sDate === v2.sDate) {
         return 0;
@@ -1214,14 +1212,11 @@ class DisplayUtil {
       let level = this.pointLevelObj[v.toId];
       this.upPrevLeval(v.id, level, v.toId);
     })
-    console.log(this.pointLevelObj);
   }
   //添加线等级
   addLineLevel() {
     let addLineArr: any = [];
     let lineLevelObj: any = {};
-    console.log(this.linesArr);
-    console.log(this.liuchengData);
     this.linesArr.forEach((l: any) => {
       let sLevel = this.pointLevelObj[l.id] || 0;
       let eLevel = this.pointLevelObj[l.toId] || 0;
@@ -1244,30 +1239,179 @@ class DisplayUtil {
         }
       }
     })
-    console.log(lineLevelObj);
     this.lineLevelObj = lineLevelObj;
+
+    let linesArr = JSON.parse(JSON.stringify(this.linesArr));
+    linesArr.sort((l1:any, l2:any) => {
+      let len1 = l1.lineLen;
+      let len2 = l2.lineLen;
+      if(len1 > len2){
+        return 1
+      }else if(len1 > len2){
+        return 0
+      }else{
+        return -1
+      }
+    })
+    let changeArr:string[] = [];
+    linesArr.forEach((l:any) => {
+      let lLevel = this.getLineLevel(l);
+      let lineBiaoshi = `${l.id}-${l.toId}`;
+      if(changeArr.includes(lineBiaoshi)){
+        return;
+      }
+      let sDate = l.sDateTime || Date.parse(l.sDate);
+      let eDate = l.eDateTime || Date.parse(l.eDate)
+      let overLapArr = linesArr.filter((lin:any) => {
+        let s = lin.sDateTime || Date.parse(lin.sDate);
+        let e = lin.eDateTime || Date.parse(lin.eDate);
+        let le = this.getLineLevel(lin);
+        let biaoshi = `${lin.id}-${lin.toId}`;
+        return !(sDate >= e || eDate <= s) && lLevel === le && biaoshi != lineBiaoshi;
+      })
+      if(overLapArr.length !== 0){
+        changeArr.push(lineBiaoshi);
+        overLapArr.forEach((l2:any) => {
+          let biaoshi = `${l2.id}-${l2.toId}`;
+          changeArr.push(biaoshi);
+          this.upLineLeval(l, l2);
+        })
+      }
+    })
+  }
+
+  //当两根线重叠时，升级线
+  upLineLeval(l1:any, l2:any){
+    let len1 = l1.lineLen;
+    let len2 = l2.lineLen;
+    let levelObj:any;
+    if(len1 > len2){
+      levelObj = l1;
+    }else{
+      levelObj = l2;
+    }
+    let changeBiaoshi:string = `${levelObj.id}-${levelObj.toId}`;
+    let nowLevel:number = this.getLineLevel(levelObj);
+    let sDate:number = levelObj.sDateTime || Date.parse(levelObj.sDate);
+    let eDate:number = levelObj.eDateTime || Date.parse(levelObj.eDate);
+    let nextLevel = this.getUpPointLevel(nowLevel);
+    this.upLineAndPointByLevel(nextLevel, sDate, eDate)
+    this.setUpLineValue(levelObj.id, levelObj.toId, levelObj.taskName, nextLevel);
+  }
+  setUpLineValue(id:number, toId:number, taskName:string,level:number){
+    let lineBiaoshi = `${id}-${toId}`;
+    let lineLevelArr = this.lineLevelObj[lineBiaoshi];
+    let arr = [level, taskName];
+    if(lineLevelArr){
+      let index = lineLevelArr.findIndex((lv :any) => lv[1] === taskName);
+      if(index === -1){
+        this.lineLevelObj[lineBiaoshi].push(arr);
+      }else{
+        this.lineLevelObj[lineBiaoshi].splice(index, 1, arr);
+      }
+    }else{
+      this.lineLevelObj[lineBiaoshi] = [arr]
+    }
+  }
+  // 根据等级 升级点或者线
+  upLineAndPointByLevel(level:number, sDate:number, eDate:number){
+    this.liuchengData.forEach((d:any) => {
+      let date = Date.parse(d.date);
+      let l = this.pointLevelObj[d.id];
+      if(date >= sDate && date <=eDate && l == level){
+        let setL = this.getUpPointLevel(this.pointLevelObj[d.id])
+        this.upLineAndPointByLevel(setL, sDate, eDate)
+        this.pointLevelObj[d.id] = setL;
+      }
+    })
+
+    this.linesArr.forEach((l:any) => {
+      let lLevel = this.getLineLevel(l);
+      let s = l.sDateTime || Date.parse(l.sDate);
+      let e = l.eDateTime || Date.parse(l.eDate);
+      if(lLevel === level && !(sDate >= e || eDate <= s)){
+        let setL = this.getUpPointLevel(level)
+        this.upLineAndPointByLevel(setL, sDate, eDate)
+        this.setUpLineValue(l.id, l.toId, l.taskName, setL);
+      }
+    })
+  }
+
+
+
+  getLineLevel(lineObj:any):number{
+    let lineBiaoshi = `${lineObj.id}-${lineObj.toId}`;
+    let level:number;
+    let lineLevelArr = this.lineLevelObj[lineBiaoshi];
+    let lineLevel = !lineLevelArr ? null : lineLevelArr.find((lv :any) => lv[1] === lineObj.taskName);
+    if(lineLevel !== null){
+      level = lineLevel[0];
+    }else{
+      let sLevel = this.pointLevelObj[lineObj.id] || 0;
+      let eLevel = this.pointLevelObj[lineObj.toId] || 0;
+      if (((sLevel >= 0 && eLevel >= 0) || (sLevel <= 0 && eLevel <= 0)) && Math.abs(sLevel) <= Math.abs(eLevel)) {
+        level = eLevel;
+      }else{
+        level = sLevel;
+      }
+    }
+    return level;
+  }
+
+  //获取当前线上的所有点
+  getAllPointByLineId(){
+    let startPoint: LiuChengData | undefined = this.liuchengData.find((d: any) => d.id === 1);
+    let lines = startPoint?.lines;
+    let allLinePoint:number[][] = [];
+    lines?.forEach((l:any) => {
+      let arr:Set<number> = new Set();
+      arr.add(l.toId);
+      this.getPointAllChildPoint(l.toId, arr);
+      allLinePoint.push([...arr])
+    })
+    this.allLinePoint = allLinePoint;
+
+  }
+
+
+  //根据ID获取父级归零的点位
+  getPointAllChildPoint(id: number, arr: Set<number>) {
+    let obj = this.liuchengData.find((val => val.id === id));
+    let lines = obj?.lines;
+    lines?.forEach(v => {
+      {
+        arr.add(v.toId);
+        this.getPointAllChildPoint(v.toId, arr);
+      }
+    })
+    return arr;
   }
 
   upLineLevel(line:any, nowLevel: number){
     let id = line.id;
     let toId = line.toId;
     let lineBiaoshi = `${id}-${toId}`;
-    let sDateTime:number = Date.parse(line.sDate);
-    let eDateTime:number = Date.parse(line.eDate);
+    let sDateTime:number = line.sDateTime;
+    let eDateTime:number = line.eDateTime;
+    let allPoint = [...new Set(this.allLinePoint.filter((allP:any) => allP.includes(toId)).flat(1))];
+    if(allPoint.length === 0){
+      return
+    }
     let lineHasPoint = this.liuchengData.filter((d:LiuChengData) => {
       let date:number = Date.parse(d.date);
       let i = d.id;
       let l = this.pointLevelObj[d.id] || 0;
-      return i !== id && i !== toId && date > sDateTime && date < eDateTime && l === nowLevel;
+      return allPoint.includes(i) && i !== id && i !== toId && date > sDateTime && date < eDateTime && l === nowLevel;
     })
     if(lineHasPoint.length !== 0){
       let lastTime = this.getPointLastTime(id);
-      let levelArr:number[] = [];
+      let levelArr:Array<number> = [];
       lineHasPoint.forEach((p:any) => {
         let pLastTime = this.getPointLastTime(p.id);
         let pLevel = this.pointLevelObj[p.id] || 0;
-        let upLeval = this.getUpPointLevel(nowLevel);
-        levelArr.push(this.upLineLevel(line, upLeval));
+        let upLevel:number = this.getUpPointLevel(nowLevel);
+        // @ts-ignore
+        levelArr.push(this.upLineLevel(line, upLevel));
         // if(pLevel === 0 || pLastTime < lastTime){
         //   level line
         //   let upLeval = this.getUpPointLevel(nowLevel);
@@ -1315,11 +1459,14 @@ class DisplayUtil {
       let startLines = startLinesPoint?.lines;
       let startPoints: any = [];
       startLines?.forEach((l: any) => {
+        let lineSdateObj = this.resultDate.find((r:any) => r.serialNumber === l.serialNumber);
+        let lineSdate = this.formatTime(lineSdateObj.planStartDate, this.dateFormatType);
+        let sLine = this.getDateDaySub(startLinesPoint.date, lineSdate);
         let id = this.liuchengData.length;
         let o = {
-          date: startLinesPoint.date,
+          date: lineSdate,
           id: id,
-          len: startLinesPoint.len,
+          len: sLine,
           level: l.level,
           lines: [
             l
@@ -1329,7 +1476,7 @@ class DisplayUtil {
         this.liuchengData.push(o)
         let toObj = this.liuchengData.find((d: LiuChengData) => d.id === l.toId);
         this.pointLevelObj[id] = this.pointLevelObj[toObj?.id || 0] || 0;
-        let sDate = startLinesPoint.date;
+        let sDate = lineSdate;
         let eDate = toObj?.date;
         let len = -1;
         if (sDate && eDate) {
@@ -1536,9 +1683,9 @@ class DisplayUtil {
       }
     })
     lineArr.sort((v1: any, v2:any) => {
-      if (Date.parse(v1.eDate) > Date.parse(v2.eDate)) {
+      if (v1.eDateTime > v2.eDateTime) {
         return 1;
-      } else if (v1.eDate === v2.eDate) {
+      } else if (v1.eDateTime === v2.eDateTime) {
         return 0;
       } else {
         return -1;
@@ -1849,9 +1996,9 @@ class DisplayUtil {
   }
 
   // 获取点位升级后的层级
-  getUpPointLevel(level: number, num?: number) {
+  getUpPointLevel(level: number, num?: number):number {
     num = num || 1;
-    if (level <= 0) {
+    if (level < 0) {
       return level - num;
     } else {
       return level + num;
