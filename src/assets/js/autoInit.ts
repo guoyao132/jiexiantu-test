@@ -472,11 +472,13 @@ class DisplayUtil {
     })
     let xuIndex = 0;
     let changeKey = Object.keys(changePoint);
+    console.log(changePoint);
     changeKey.forEach((key: string) => {
       let value = changePoint[key];
       let ids = key.split(',');
       let idsParents = this.resultDate.filter((r:any) => ids.includes(r.serialNumber)).map((r:any) => r.parentId);
       idsParents = new Set(idsParents)
+      console.log(idsParents);
       if(idsParents.size === 1){
         let hasOnlyPoint = pointArr.filter((p: any) => p.childLine.findIndex((p1: any) => value.includes(p1.serialNumber)) !== -1);
         pointArr = pointArr.filter((p: any) => !(p.childLine.findIndex((p1: any) => value.includes(p1.serialNumber)) !== -1));
@@ -608,6 +610,7 @@ class DisplayUtil {
         lines: lines
       })
     })
+    console.log(pointArr);
     for(let key in FFLineObj){
       let values = FFLineObj[key];
       let sResult = resultFormatDate.find((r:any) => {
@@ -654,6 +657,7 @@ class DisplayUtil {
         }
       })
     }
+    console.log(resultFormatDate);
     return resultFormatDate;
   }
 
@@ -2308,20 +2312,7 @@ class DisplayUtil {
   // 添加主边框
   addMainEdge() {
     let levelArr = ([...new Set(Object.values(this.pointLevelObj))] as number[]).filter((l: number) => l != undefined);
-    let lineLevalArr = Object.values(this.lineLevelObj).map((l: any) => {
-      return l.map((ll: any, index: number) => {
-        if (index === 0) {
-          return ll;
-        } else {
-          let l1 = l[0];
-          let d = 1;
-          if (l1 < 0) {
-            d = -1;
-          }
-          return l1 + d * (index - 1);
-        }
-      })
-    }).flat(1).filter((l: any) => !isNaN(l));
+    let lineLevalArr = Object.values(this.lineLevelObj).map((l: any) => l[0]).flat(1).filter((l: any) => !isNaN(l));
     lineLevalArr = [...new Set(lineLevalArr)];
     let minLevel = Math.min(...levelArr, ...lineLevalArr);
     let maxLevel = Math.max(...levelArr, ...lineLevalArr);
