@@ -876,7 +876,7 @@ class DisplayUtil {
     const d = new Date(obj.planStartDate);
     obj.planEndDate = this.timestampToTime(d.setDate(d.getDate() + (Number(obj.duration) - 1)));
     editDiagram(obj).then(() => {
-      this.sendMsg(
+      this.sendMsg({
         type: 'update',
         updateTypa: 'add',
       });
