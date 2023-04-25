@@ -147,6 +147,10 @@ const submit = () => {
         }).then(() => {
           displayUtil.updateOnLineXml();
           dialogVisible.value = false;
+          displayUtil.sendMsg({
+            type: 'update',
+            updateTypa: 'duration',
+          });
         })
       }
     }

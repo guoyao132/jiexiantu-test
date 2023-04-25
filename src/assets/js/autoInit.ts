@@ -146,7 +146,7 @@ class DisplayUtil {
     this.editorUi.$route = query.query.value;
     this.editorUi.$ElMessageBox = ElMessageBox;
     this.editorUi.$displayUtil = displayUtil;
-    // this.addEvents();
+    this.addEvents();
     this.parentCell = this.graph.getDefaultParent();
     if (query.singleId) {
       this.getData(query.singleId);
@@ -816,8 +816,8 @@ class DisplayUtil {
     this.graph.getModel().addListener(window.mxEvent.CHANGE, CHANGE_Listener);
     this.graphModelEventList.push(CHANGE_Listener)
 
-    // tool.removeListenerMessage();
-    // this.addListenerMessage();
+    tool.removeListenerMessage();
+    this.addListenerMessage();
 
     // const self = this;
     // const container = this.graph.container;
@@ -876,9 +876,9 @@ class DisplayUtil {
     const d = new Date(obj.planStartDate);
     obj.planEndDate = this.timestampToTime(d.setDate(d.getDate() + (Number(obj.duration) - 1)));
     editDiagram(obj).then(() => {
-      this.sendMsg({
+      this.sendMsg(
         type: 'update',
-        updateTypa: 'duration',
+        updateTypa: 'add',
       });
       this.updateOnLineXml();
     })
