@@ -466,19 +466,19 @@ class DisplayUtil {
     pointArr.sort((v1: any, v2: any) => {
       if (Date.parse(v1.date) > Date.parse(v2.date)) {
         return 1;
+      } else if (Date.parse(v1.date) === Date.parse(v2.date)) {
+        return 0;
       } else {
         return -1;
       }
     })
     let xuIndex = 0;
     let changeKey = Object.keys(changePoint);
-    console.log(changePoint);
     changeKey.forEach((key: string) => {
       let value = changePoint[key];
       let ids = key.split(',');
       let idsParents = this.resultDate.filter((r:any) => ids.includes(r.serialNumber)).map((r:any) => r.parentId);
       idsParents = new Set(idsParents)
-      console.log(idsParents);
       if(idsParents.size === 1){
         let hasOnlyPoint = pointArr.filter((p: any) => p.childLine.findIndex((p1: any) => value.includes(p1.serialNumber)) !== -1);
         pointArr = pointArr.filter((p: any) => !(p.childLine.findIndex((p1: any) => value.includes(p1.serialNumber)) !== -1));
@@ -610,7 +610,6 @@ class DisplayUtil {
         lines: lines
       })
     })
-    console.log(pointArr);
     for(let key in FFLineObj){
       let values = FFLineObj[key];
       let sResult = resultFormatDate.find((r:any) => {
@@ -657,7 +656,6 @@ class DisplayUtil {
         }
       })
     }
-    console.log(resultFormatDate);
     return resultFormatDate;
   }
 
@@ -1364,7 +1362,10 @@ class DisplayUtil {
 
   //获取当前线上的所有点
   getAllPointByLineId(){
+    console.log(this.liuchengData.find((d: any) => d.id === 1));
     let startPoint: LiuChengData | undefined = this.liuchengData.find((d: any) => d.id === 1);
+    console.log(this.liuchengData);
+    console.log(startPoint);
     let lines = startPoint?.lines;
     let allLinePoint:number[][] = [];
     lines?.forEach((l:any) => {
