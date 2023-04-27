@@ -54,17 +54,14 @@ EditorUi = function(editor, container, lightbox)
 	this.actions = new Actions(this);
 	this.menus = this.createMenus();
 
-	if (!graph.standalone)
-	{
+	if (!graph.standalone) {
 		this.createDivs();
 		this.createUi();
 		this.refresh();
 
 		// Disables HTML and text selection
-		var textEditing =  mxUtils.bind(this, function(evt)
-		{
-			if (evt == null)
-			{
+		var textEditing = mxUtils.bind(this, function (evt) {
+			if (evt == null) {
 				evt = window.event;
 			}
 
@@ -72,8 +69,7 @@ EditorUi = function(editor, container, lightbox)
 		});
 
 		// Disables text selection while not editing and no dialog visible
-		if (this.container == document.body)
-		{
+		if (this.container == document.body) {
 			this.menubarContainer.onselectstart = textEditing;
 			this.menubarContainer.onmousedown = textEditing;
 			this.toolbarContainer.onselectstart = textEditing;
@@ -87,29 +83,22 @@ EditorUi = function(editor, container, lightbox)
 			this.footerContainer.onselectstart = textEditing;
 			this.footerContainer.onmousedown = textEditing;
 
-			if (this.tabContainer != null)
-			{
+			if (this.tabContainer != null) {
 				// Mouse down is needed for drag and drop
 				this.tabContainer.onselectstart = textEditing;
 			}
 		}
 
 		// And uses built-in context menu while editing
-		if (!this.editor.chromeless || this.editor.editable)
-		{
+		if (!this.editor.chromeless || this.editor.editable) {
 			// Allows context menu for links in hints
-			var linkHandler = function(evt)
-			{
-				if (evt != null)
-				{
+			var linkHandler = function (evt) {
+				if (evt != null) {
 					var source = mxEvent.getSource(evt);
 
-					if (source.nodeName == 'A')
-					{
-						while (source != null)
-						{
-							if (source.className == 'geHint')
-							{
+					if (source.nodeName == 'A') {
+						while (source != null) {
+							if (source.className == 'geHint') {
 								return true;
 							}
 
@@ -121,47 +110,37 @@ EditorUi = function(editor, container, lightbox)
 				return textEditing(evt);
 			};
 
-			if (mxClient.IS_IE && (typeof(document.documentMode) === 'undefined' || document.documentMode < 9))
-			{
+			if (mxClient.IS_IE && (typeof (document.documentMode) === 'undefined' || document.documentMode < 9)) {
 				mxEvent.addListener(this.diagramContainer, 'contextmenu', linkHandler);
-			}
-			else
-			{
+			} else {
 				// Allows browser context menu outside of diagram and sidebar
 				this.diagramContainer.oncontextmenu = linkHandler;
 			}
-		}
-		else
-		{
+		} else {
 			graph.panningHandler.usePopupTrigger = false;
 		}
 
 		// Contains the main graph instance inside the given panel
 		graph.init(this.diagramContainer);
 
-	    // Improves line wrapping for in-place editor
-	    if (mxClient.IS_SVG && graph.view.getDrawPane() != null)
-	    {
-	        var root = graph.view.getDrawPane().ownerSVGElement;
+		// Improves line wrapping for in-place editor
+		if (mxClient.IS_SVG && graph.view.getDrawPane() != null) {
+			var root = graph.view.getDrawPane().ownerSVGElement;
 
-	        if (root != null)
-	        {
-	            root.style.position = 'absolute';
-	        }
-	    }
+			if (root != null) {
+				root.style.position = 'absolute';
+			}
+		}
 
 		// Creates hover icons
-		this.hoverIcons = this.createHoverIcons();
+		this.hoverIcons = null; //this.createHoverIcons();
 
 		// Hides hover icons when cells are moved
-		if (graph.graphHandler != null)
-		{
+		if (graph.graphHandler != null) {
 			var graphHandlerStart = graph.graphHandler.start;
 
-			graph.graphHandler.start = function()
-			{
-				if (ui.hoverIcons != null)
-				{
+			graph.graphHandler.start = function () {
+				if (ui.hoverIcons != null) {
 					ui.hoverIcons.reset();
 				}
 
@@ -170,38 +149,36 @@ EditorUi = function(editor, container, lightbox)
 		}
 
 		// Adds tooltip when mouse is over scrollbars to show space-drag panning option
-		mxEvent.addListener(this.diagramContainer, 'mousemove', mxUtils.bind(this, function(evt)
-		{
+		mxEvent.addListener(this.diagramContainer, 'mousemove', mxUtils.bind(this, function (evt) {
 			var off = mxUtils.getOffset(this.diagramContainer);
 
 			if (mxEvent.getClientX(evt) - off.x - this.diagramContainer.clientWidth > 0 ||
-				mxEvent.getClientY(evt) - off.y - this.diagramContainer.clientHeight > 0)
-			{
+				mxEvent.getClientY(evt) - off.y - this.diagramContainer.clientHeight > 0) {
 				this.diagramContainer.setAttribute('title', mxResources.get('panTooltip'));
-			}
-			else
-			{
+			} else {
 				this.diagramContainer.removeAttribute('title');
 			}
 		}));
 
-	   	// Escape key hides dialogs, adds space+drag panning
+		// Escape key hides dialogs, adds space+drag panning
 		var spaceKeyPressed = false;
 
 		// Overrides hovericons to disable while space key is pressed
-		var hoverIconsIsResetEvent = this.hoverIcons.isResetEvent;
 
-		this.hoverIcons.isResetEvent = function(evt, allowShift)
-		{
-			return spaceKeyPressed || hoverIconsIsResetEvent.apply(this, arguments);
-		};
+		if (this.hoverIcons != null){
+			var hoverIconsIsResetEvent = this.hoverIcons.isResetEvent;
+			this.hoverIcons.isResetEvent = function(evt, allowShift)
+			{
+				return spaceKeyPressed || hoverIconsIsResetEvent.apply(this, arguments);
+			};
+		}
 
 		this.keydownHandler = mxUtils.bind(this, function(evt)
 		{
 			if (evt.which == 32 /* Space */ && !graph.isEditing())
 			{
 				spaceKeyPressed = true;
-				this.hoverIcons.reset();
+				this.hoverIcons && this.hoverIcons.reset();
 				graph.container.style.cursor = 'move';
 
 				// Disables scroll after space keystroke with scrollbars
@@ -1282,16 +1259,18 @@ EditorUi.prototype.showShapePicker = function(x, y, source, callback, direction)
 				'width:30px;height:30px;cursor:pointer;overflow:hidden;padding:3px 0 0 3px;';
 			div.appendChild(node);
 
-			if (style != null)
-			{
-				this.sidebar.graph.pasteStyle(style, [cell]);
-			}
-			else
-			{
-				ui.insertHandler([cell], cell.value != '', this.sidebar.graph.model);
+			if(this.sidebar){
+				if (style != null)
+				{
+					this.sidebar.graph.pasteStyle(style, [cell]);
+				}
+				else
+				{
+					ui.insertHandler([cell], cell.value != '', this.sidebar.graph.model);
+				}
+				this.sidebar.createThumb([cell], 25, 25, node, null, true, false, cell.geometry.width, cell.geometry.height);
 			}
 
-			this.sidebar.createThumb([cell], 25, 25, node, null, true, false, cell.geometry.width, cell.geometry.height);
 
 			mxEvent.addListener(node, 'click', function()
 			{
