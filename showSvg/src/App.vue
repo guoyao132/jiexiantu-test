@@ -42,12 +42,18 @@ onMounted(() => {
 
 
 <style lang="less">
+@import "../src/assets/css/mxgraph_theme_params.less";
+
 html, body, #app{
   width: 100%;
   height: 100%;
   padding: 0;
   margin: 0;
   background: transparent;
+}
+
+body{
+  background: var(--mxgraph-main-color);
 }
 .main{
   width: 100%;

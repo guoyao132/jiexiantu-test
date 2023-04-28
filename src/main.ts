@@ -1,5 +1,4 @@
 import { createApp } from 'vue'
-import './assets/css/reset.css'
 import './assets/css/index.less'
 import App from './App.vue'
 import router from './router'

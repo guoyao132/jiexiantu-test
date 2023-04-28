@@ -14,6 +14,7 @@ export default defineConfig(({mode}: ConfigEnv) => {
     server: {
       proxy: {
         '/rtSingleArrowDiagram': 'http://172.18.8.243:9030',
+        '/xmlToPdf': 'http://172.18.8.243:9030',
         '/scheduleGraph': 'http://172.18.8.243:9030'
       }
 

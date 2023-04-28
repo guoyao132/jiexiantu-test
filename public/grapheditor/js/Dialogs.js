@@ -1217,7 +1217,8 @@ ExportDialog.exportFile = function(editorUi, name, format, bg, s, b, dpi)
 	    imgExport.drawState(graph.getView().getState(graph.model.root), xmlCanvas);
 
 		// Puts request data together
-		var param = 'xml=' + encodeURIComponent(mxUtils.getXml(root));
+			console.log(mxUtils.getXml(root));
+			var param = 'xml=' + encodeURIComponent(mxUtils.getXml(root));
 		var w = Math.ceil(bounds.width * s / graph.view.scale + 2 * b);
 		var h = Math.ceil(bounds.height * s / graph.view.scale + 2 * b);
 
@@ -1225,12 +1226,32 @@ ExportDialog.exportFile = function(editorUi, name, format, bg, s, b, dpi)
 		if (param.length <= MAX_REQUEST_SIZE && w * h < MAX_AREA)
 		{
 			editorUi.hideDialog();
-			var req = new mxXmlRequest(EXPORT_URL, 'format=' + format +
-				'&filename=' + encodeURIComponent(name) +
-				'&bg=' + ((bg != null) ? bg : 'none') +
-				'&w=' + w + '&h=' + h + '&' + param +
-				'&dpi=' + dpi);
-			req.simulate(document, '_blank');
+			// var req = new mxXmlRequest(EXPORT_URL, 'format=' + format +
+			// 	'&filename=' + encodeURIComponent(name) +
+			// 	'&bg=' + ((bg != null) ? bg : 'none') +
+			// 	'&w=' + w + '&h=' + h + '&' + param +
+			// 	'&dpi=' + dpi);
+			// req.simulate(document, '_blank');
+			editorUi.$api.exportFile({
+				fileName: encodeURIComponent(name),
+				content: encodeURIComponent(mxUtils.getXml(root)),
+			}).then(resp => {
+				const content = resp;
+				const blob = new Blob([content]);
+				const fileName = name;
+				if ('download' in document.createElement('a')) { // 非IE下载
+					const elink = document.createElement('a');
+					elink.download = fileName;
+					elink.style.display = 'none';
+					elink.href = URL.createObjectURL(blob);
+					document.body.appendChild(elink);
+					elink.click();
+					URL.revokeObjectURL(elink.href); // 释放URL 对象
+					document.body.removeChild(elink)
+				} else { // IE10+下载
+					navigator.msSaveBlob(blob, fileName)
+				}
+			})
 		}
 		else
 		{
@@ -1250,9 +1271,11 @@ ExportDialog.saveLocalFile = function(editorUi, data, filename, format)
 	if (data.length < MAX_REQUEST_SIZE)
 	{
 		editorUi.hideDialog();
+		console.log(editorUi);
 		var req = new mxXmlRequest(SAVE_URL, 'xml=' + encodeURIComponent(data) + '&filename=' +
 			encodeURIComponent(filename) + '&format=' + format);
-		req.simulate(document, '_blank');
+		console.log(req);
+		// req.simulate(document, '_blank');
 	}
 	else
 	{

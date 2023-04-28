@@ -12,6 +12,7 @@ import {ElMessage, ElMessageBox} from 'element-plus'
 import 'element-plus/es/components/message-box/style/css'
 import tool from '../js/tool'
 import type {sendMsgData} from '../js/tool'
+import COLOROBJ from './color'
 
 const MESSAGE_DURATION: number = 3000;
 const Line2Type: string[] = ['FS', 'SS'];
@@ -43,8 +44,6 @@ class DisplayUtil {
   dateSubLength: number;   //时间间隔长度
   ySubLength: number;   //y轴层级间隔长度
   bolangxianSubLength: number;   //波浪线间隔
-  colorLevalArr: string[];//重要程度数组
-  quyuColor: string[];//重要程度数组
   strokeWidth: number;     //线宽度
   minDateLen: number;     //最小的日期长度
   dateMinSub: number;     //日期多少天一组
@@ -88,9 +87,11 @@ class DisplayUtil {
   splitParentIds: string[];
   linePointArr: any; // 将线当成点的数组
   isTiaoshi: boolean;
+  isDelete: boolean;
 
   constructor() {
     this.isTiaoshi = import.meta.env.MODE === "development";
+    this.isDelete = import.meta.env.MODE === "development";
     this.editorUi = null;
     this.graph = null;
     this.graphModel = null;
@@ -108,8 +109,6 @@ class DisplayUtil {
     this.minDateLen = 100;
     this.dateMinSub = 1;
     this.dateBase = 50;
-    this.colorLevalArr = ['#0080ff', '#ff0000', '#008080'];
-    this.quyuColor = ['#005EFF', '#659ffa'];
     this.dateFormatType = 'y.m.d';
     this.parentCell = null;
     this.linesArr = [];
@@ -205,7 +204,7 @@ class DisplayUtil {
 
   getOnlineData(singleId: string) {
     getDiagramList({
-      singleId: singleId,
+      masterPlanId: singleId,
     }).then((resp: any) => {
       let result = resp.result || {};
       let diagramList = result.diagramList;
@@ -722,7 +721,6 @@ class DisplayUtil {
     this.graph.orderCells(true, this.quyuList.map((quyuId: string) => this.graphModel.getCell(quyuId)));
     this.graphModel.endUpdate()
     this.graph.fit(10, false, 0, true, false, false);
-
   }
 
   addPointLine(){
@@ -812,7 +810,6 @@ class DisplayUtil {
         level: 0,
         lines: childrenIds
       }
-      console.log(o, childrenIds);
       childrenIds.forEach((ids:any) => {
         let toId = ids.toId;
         this.linesArr.push({
@@ -1610,6 +1607,14 @@ class DisplayUtil {
     }
   }
 
+  splitBrNameStr(name:string){
+    let taskNameArr = [];
+    for (let i = 0; i <name.length ; i+=7) {
+      taskNameArr.push(name.slice(i,i+7))
+    }
+    return taskNameArr.join('<br>');
+  }
+
   //根据ID获取父级归零的点位
   getPointAllChildPoint(id: number, arr: Set<number>) {
     let obj = this.liuchengData.find((val => val.id === id));
@@ -2299,16 +2304,33 @@ class DisplayUtil {
       if (v.id !== 1) {
         x = x - this.pointSize / 2;
       }
-      let strokeColor = this.colorLevalArr[0];
+      let strokeColor = COLOROBJ.POINT_STROKECOLOR;
+      let fillColor = COLOROBJ.POINT_FILLCOLOR;
+      let fontColor = COLOROBJ.POINT_FONTCOLOR;
       if (v.level === 1) {
-        strokeColor = this.colorLevalArr[1];
+        strokeColor = COLOROBJ.POINT_STROKECOLOR_IMP;
+        fillColor = COLOROBJ.POINT_FILLCOLOR_IMP;
+        fontColor = COLOROBJ.POINT_FONTCOLOR_IMP;
       }
-      let styleStr = `deletable=0;resizable=0;connectable=0;rotatable=0;ellipse;whiteSpace=wrap;html=1;strokeColor=${strokeColor};strokeWidth=${this.strokeWidth};fontSize=${this.fontSize};`;
-      let yLevel = this.pointLevelObj[v.id] || 0;
-      let y = this.ySubLength * yLevel;
-      const cell = this.graph.insertVertex(this.parentCell, `point-${v.id}`, v.id, x, y, this.pointSize, this.pointSize, styleStr);
-      let s = `text;html=1;align=center;verticalAlign=top;resizable=0;points=[];autosize=1;spacingTop=60`;
-      this.graph.insertVertex(cell, null, v.date, 0, 0, 0, 0, s, true);
+      let cell:any;
+      if(v.lineName){
+        // let s = `whiteSpace=wrap;text;html=1;align=right;verticalAlign=middle;resizable=0;labelPosition=left;spacingRight=20;strokeColor=#000;strokeWidth=${this.strokeWidth};`;
+        // let name = this.splitBrNameStr(v.lineName)
+        // this.graph.insertVertex(cell, null, v.lineName, 0, 0.5, 100, 0, s, true);
+        if(v.lineName){
+          x = x + 150;
+        }
+        let styleStr = `whiteSpace=wrap;deletable=0;resizable=0;connectable=0;rotatable=0;whiteSpace=wrap;html=1;strokeColor=${strokeColor};strokeWidth=${this.strokeWidth};fontSize=20;fillColor=${fillColor};fontColor=${fontColor};`;
+        let yLevel = this.pointLevelObj[v.id] || 0;
+        let y = this.ySubLength * yLevel;
+        let hei = parseInt((v.lineName.length / 8 + ''));
+        cell = this.graph.insertVertex(this.parentCell, `point-${v.id}`, v.lineName, 10, y, 200, this.pointSize + (hei * 25), styleStr);
+      }else{
+        let styleStr = `deletable=0;resizable=0;connectable=0;rotatable=0;ellipse;whiteSpace=wrap;html=1;strokeColor=${strokeColor};strokeWidth=${this.strokeWidth};fontSize=${this.fontSize};fillColor=${fillColor};fontColor=${fontColor};`;
+        let yLevel = this.pointLevelObj[v.id] || 0;
+        let y = this.ySubLength * yLevel;
+        cell = this.graph.insertVertex(this.parentCell, `point-${v.id}`, v.id, x, y, this.pointSize, this.pointSize, styleStr);
+      }
       this.dataCellObj[v.id] = cell;
     })
     return cells;
@@ -2322,12 +2344,12 @@ class DisplayUtil {
         return;
       }
       let lineBiaoshi = `${val.id}-${val.toId}`;
-      let strokeColor = this.colorLevalArr[0];
+      let strokeColor = COLOROBJ.POINT_STROKECOLOR;
       if (val.level === 1) {
-        strokeColor = this.colorLevalArr[1];
+        strokeColor = COLOROBJ.POINT_STROKECOLOR_IMP;
       }
       if (val.type === 2) {
-        strokeColor = this.colorLevalArr[2];
+        strokeColor = COLOROBJ.POINT_STROKECOLOR;
       }
       let exitX = 1;
       let exitY = 0.5;
@@ -2361,7 +2383,7 @@ class DisplayUtil {
         entryY = 0.5;
       }
       let styleStr =
-        `movable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};exitX=${exitX};exitY=${exitY};exitDx=0;exitDy=0;entryX=${entryX};entryY=${entryY};entryDx=0;entryDy=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
+        `whiteSpace=wrap;movable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${strokeColor};exitX=${exitX};exitY=${exitY};exitDx=0;exitDy=0;entryX=${entryX};entryY=${entryY};entryDx=0;entryDy=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
       if (val.type === 1 || val.type === 2 || (val.lineId && val.lineId.includes('l-'))) {
         styleStr += 'dashed=1;';
       } else {
@@ -2371,13 +2393,16 @@ class DisplayUtil {
       let fenqu1Num = this.fenquPoint.findIndex((f: any) => f.includes(val.id));
       let fenqu2Num = this.fenquPoint.findIndex((f: any) => f.includes(val.toId));
       let levelIndex = this.getLineInitLevel(val);
+      let width = this.pointSize;
+      if(val.taskName === 'LinePoint'){
+        width = 200;
+      }
       if (fenqu1Num === fenqu2Num && levelIndex === 1) {
         let d = 1 || y2 < 0 ? -1 : 1;
-        point = [[x1 + (exitX * this.pointSize), y2 - (d * entryY * this.pointSize)]];
+        point = [[x1 + (exitX * width), y2 - (d * entryY * width)]];
         if (addLineArr.includes(lineBiaoshi)) {
           point = [
-            [x1 + (exitX * this.pointSize), y2 - (d * entryY * this.pointSize) - d * (this.ySubLength / 2)],
-            // [x2 - (entryX * this.pointSize), y2 - (d * entryY * this.pointSize) - d * (this.ySubLength / 2)],
+            [x1 + (exitX * width), y2 - (d * entryY * width) - d * (this.ySubLength / 2)],
           ]
         }
       } else if (fenqu1Num === fenqu2Num && levelIndex === 0) {
@@ -2391,9 +2416,9 @@ class DisplayUtil {
         }
       }else{
         if(fenqu1Num > fenqu2Num){
-          point = [[x2 - (entryX * this.pointSize), y1 - (-1 * exitY * this.pointSize)]];
+          point = [[x2 - (entryX * width), y1 - (-1 * exitY * width)]];
         }else{
-          point = [[x1 + (exitX * this.pointSize), y2 - (-1 * entryY * this.pointSize)]];
+          point = [[x1 + (exitX * width), y2 - (-1 * entryY * width)]];
         }
       }
       let objStart = this.liuchengData.find((v => v.id === val.id));
@@ -2553,11 +2578,13 @@ class DisplayUtil {
         }
       }
       let lineId = val.serialNumber ? `line-${val.serialNumber}` : null;
-      let e1 = this.graph.insertEdge(this.dataCellObj[val.id], lineId, lineValue, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr);
+      let labelWdith = x2 - x1 - 25;
+      let fontStyle = `fontColor=${COLOROBJ.FONTCOLOR};`;
+      let e1 = this.graph.insertEdge(this.dataCellObj[val.id], lineId, lineValue, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr + fontStyle + 'labelWidth=' + labelWdith);
       e1.geometry.points = points
       addLineArr.push(lineBiaoshi);
       let gongqiId = val.serialNumber ? `gongqi-${val.serialNumber}` : null;
-      let lenStyle = `edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=${this.fontSize};labelBackgroundColor=none;`
+      let lenStyle = `edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=${this.fontSize};labelBackgroundColor=none;` + fontStyle
       this.graph.insertVertex(e1, gongqiId, lineLen, 0, -20, 0, 0, lenStyle, true);
     })
   }
@@ -2599,7 +2626,7 @@ class DisplayUtil {
     let minX = this.leftTopPoint[0];
     let maxX = this.rightBottomPoint[0];
     let minY = this.leftTopPoint[1];
-    let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeWidth=${this.strokeWidth};fontSize=${this.fontSize};labelBackgroundColor=none;`;
+    let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeWidth=${this.strokeWidth};strokeColor=${COLOROBJ.BORDER_COLOR};fontSize=${this.fontSize};labelBackgroundColor=none;fontColor=${COLOROBJ.FONTCOLOR};`;
     //绘制标尺容器
     this.graph.insertVertex(this.parentCell, null, '日', minX, minY - this.biaochiHeight, this.mainPadding, this.biaochiHeight, styleStr);
     this.graph.insertVertex(this.parentCell, null, '年、月', minX, minY - this.biaochiHeight * 2, this.mainPadding, this.biaochiHeight, styleStr);
@@ -2615,7 +2642,7 @@ class DisplayUtil {
     let allLen = this.getDateDaySub(this.startDate, endDate)
     // dateMinSub
     let biaochiNum = Math.ceil(allLen / this.dateMinSub) + 1;
-    let biaochiLabelStyle = `movable=0;deletable=0;resizable=0;connectable=0;ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
+    let biaochiLabelStyle = `movable=0;deletable=0;resizable=0;connectable=0;ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};fontColor=${COLOROBJ.FONTCOLOR};`;
     let prevX = minX + this.mainPadding;
     let prevD = this.formatTime(Date.parse(this.startDate), this.dateFormatType).split('.')[2];
     for (let i = 1; i < biaochiNum; i++) {
@@ -2700,7 +2727,7 @@ class DisplayUtil {
     let minX = this.leftTopPoint[0];
     let maxX = this.rightBottomPoint[0];
     let maxY = this.rightBottomPoint[1];
-    let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};`;
+    let styleStr = `movable=0;deletable=0;resizable=0;connectable=0;ellipse;whiteSpace=wrap;html=1;fontSize=${this.fontSize};fontColor=${COLOROBJ.FONTCOLOR};`;
     let bottomHei = this.bottomHei;
 
     this.addLineEdge([minX, maxY], [minX, maxY + bottomHei]); //左竖线
@@ -2751,12 +2778,12 @@ class DisplayUtil {
     // strokeColor=${strokeColor};
     let tuliStyle = [
       [
-        tuliStyleStr + `strokeColor=${this.colorLevalArr[0]};`,
-        `movable=0;deletable=0;resizable=0;connectable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${this.colorLevalArr[0]};curved=1;`
+        tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR};`,
+        `movable=0;deletable=0;resizable=0;connectable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${COLOROBJ.LINE_STROKECOLOR};curved=1;`
       ],
       [
-        tuliStyleStr + `strokeColor=${this.colorLevalArr[1]};`,
-        tuliStyleStr + `strokeColor=${this.colorLevalArr[0]};dashed=1;`,
+        tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR_IMP};`,
+        tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR};dashed=1;`,
       ],
 
     ]
@@ -2800,7 +2827,7 @@ class DisplayUtil {
 
   addLineEdge(startPoint: number[], endPoint: number[], text?: string, styleStr?: string) {
     styleStr = styleStr ||
-      `movable=0;deletable=0;resizable=0;connectable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=#000000;rounded=0;endArrow=none;`;
+      `movable=0;deletable=0;resizable=0;connectable=0;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;strokeColor=${COLOROBJ.BORDER_COLOR};rounded=0;endArrow=none;`;
     let sV = this.createPointVertex(startPoint[0], startPoint[1]);
     let eV = this.createPointVertex(endPoint[0], endPoint[1]);
     return this.graph.insertEdge(this.parentCell, null, text || '', sV, eV, styleStr);
@@ -2942,12 +2969,13 @@ class DisplayUtil {
 
   addFenqu(x: number, y: number, w: number, h: number, name: string) {
     let colorIndex = this.quyuList.length % 2
-    let color = this.quyuColor[colorIndex];
-    let styleStr = `strokeWidth=3;strokeColor=#000;movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;labelBackgroundColor=none;fillColor=${color};opacity=30;`;
+    let color = COLOROBJ.FENQU_COLOR_LIST[colorIndex];
+    let styleStr = `strokeWidth=3;strokeColor=${COLOROBJ.BORDER_COLOR};movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;labelBackgroundColor=none;fillColor=${color};opacity=100;`;
     let id = 'quyu-' + this.quyuList.length
     let qy = this.graph.insertVertex(this.parentCell, id, null, x, y, w, h, styleStr)
 
-    let styleStrName = `text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=${this.fontSize};align=left;`;
+    let fontStyle = `fontColor=${COLOROBJ.FONTCOLOR};`;
+    let styleStrName = `text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=${this.fontSize};align=left;` + fontStyle;
     this.graph.insertVertex(qy, null, name,  0.001, 0.5, 0, 0, styleStrName, true);
     this.quyuList.push(id)
     return qy;

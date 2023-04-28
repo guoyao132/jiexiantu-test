@@ -809,34 +809,34 @@ Actions.prototype.init = function () {
 
   // Option actions
   var action = null;
-  action = this.addAction('grid', function () {
-    graph.setGridEnabled(!graph.isGridEnabled());
-    ui.fireEvent(new mxEventObject('gridEnabledChanged'));
-  }, null, null, Editor.ctrlKey + '+Shift+G');
-  action.setToggleAction(true);
-  action.setSelectedCallback(function () {
-    return graph.isGridEnabled();
-  });
-  action.setEnabled(false);
+  // action = this.addAction('grid', function () {
+  //   graph.setGridEnabled(!graph.isGridEnabled());
+  //   ui.fireEvent(new mxEventObject('gridEnabledChanged'));
+  // }, null, null, Editor.ctrlKey + '+Shift+G');
+  // action.setToggleAction(true);
+  // action.setSelectedCallback(function () {
+  //   return graph.isGridEnabled();
+  // });
+  // action.setEnabled(false);
 
-  action = this.addAction('guides', function () {
-    graph.graphHandler.guidesEnabled = !graph.graphHandler.guidesEnabled;
-    ui.fireEvent(new mxEventObject('guidesEnabledChanged'));
-  });
-  action.setToggleAction(true);
-  action.setSelectedCallback(function () {
-    return graph.graphHandler.guidesEnabled;
-  });
-  action.setEnabled(false);
+  // action = this.addAction('guides', function () {
+  //   graph.graphHandler.guidesEnabled = !graph.graphHandler.guidesEnabled;
+  //   ui.fireEvent(new mxEventObject('guidesEnabledChanged'));
+  // });
+  // action.setToggleAction(true);
+  // action.setSelectedCallback(function () {
+  //   return graph.graphHandler.guidesEnabled;
+  // });
+  // action.setEnabled(false);
 
-  action = this.addAction('tooltips', function () {
-    graph.tooltipHandler.setEnabled(!graph.tooltipHandler.isEnabled());
-    ui.fireEvent(new mxEventObject('tooltipsEnabledChanged'));
-  });
-  action.setToggleAction(true);
-  action.setSelectedCallback(function () {
-    return graph.tooltipHandler.isEnabled();
-  });
+  // action = this.addAction('tooltips', function () {
+  //   graph.tooltipHandler.setEnabled(!graph.tooltipHandler.isEnabled());
+  //   ui.fireEvent(new mxEventObject('tooltipsEnabledChanged'));
+  // });
+  // action.setToggleAction(true);
+  // action.setSelectedCallback(function () {
+  //   return graph.tooltipHandler.isEnabled();
+  // });
 
   action = this.addAction('collapseExpand', function () {
     var change = new ChangePageSetup(ui);
@@ -851,16 +851,16 @@ Actions.prototype.init = function () {
     return graph.foldingEnabled;
   });
   action.isEnabled = isGraphEnabled;
-  action = this.addAction('scrollbars', function () {
-    ui.setScrollbars(!ui.hasScrollbars());
-  });
+  // action = this.addAction('scrollbars', function () {
+  //   ui.setScrollbars(!ui.hasScrollbars());
+  // });
   action.setToggleAction(true);
   action.setSelectedCallback(function () {
     return graph.scrollbars;
   });
-  action = this.addAction('pageView', mxUtils.bind(this, function () {
-    ui.setPageVisible(!graph.pageVisible);
-  }));
+  // action = this.addAction('pageView', mxUtils.bind(this, function () {
+  //   ui.setPageVisible(!graph.pageVisible);
+  // }));
   action.setToggleAction(true);
   action.setSelectedCallback(function () {
     return graph.pageVisible;
