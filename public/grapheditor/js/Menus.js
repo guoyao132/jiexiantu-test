@@ -1069,7 +1069,7 @@ Menus.prototype.addShortcut = function(item, action)
 	{
 		var td = item.firstChild.nextSibling.nextSibling;
 		var span = document.createElement('span');
-		span.style.color = 'gray';
+		span.style.color = 'rgba(117,155,169,0.45)';
 		mxUtils.write(span, action.shortcut);
 		td.appendChild(span);
 	}
