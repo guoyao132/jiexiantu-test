@@ -169,7 +169,7 @@ class DisplayUtil {
     }).then((resp: any) => {
       let result = resp.result || {};
       let moduleXml = result.moduleXml;
-      if (false && moduleXml) {
+      if (moduleXml) {
         //更新线
         let data = window.Graph.zapGremlins(moduleXml)
         this.graphModel.beginUpdate()
