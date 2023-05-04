@@ -30,7 +30,7 @@ Format.prototype.showCloseButton = true;
 /**
  * Background color for inactive tabs.
  */
-Format.prototype.inactiveTabBackgroundColor = '#f1f3f4';
+Format.prototype.inactiveTabBackgroundColor = '#0d3d50';
 
 /**
  * Background color for inactive tabs.
@@ -818,19 +818,20 @@ BaseFormatPanel.prototype.createStepper = function(input, update, step, height, 
 	mxUtils.setPrefixedStyle(stepper.style, 'borderRadius', '3px');
 	stepper.style.border = '1px solid rgb(192, 192, 192)';
 	stepper.style.position = 'absolute';
+	stepper.className = 'geBtnUpDown-con';
 
 	var up = document.createElement('div');
 	up.style.borderBottom = '1px solid rgb(192, 192, 192)';
 	up.style.position = 'relative';
 	up.style.height = height + 'px';
 	up.style.width = '10px';
-	up.className = 'geBtnUp';
+	up.className = 'geBtnUp ge-btn-up';
 	stepper.appendChild(up);
 
 	var down = up.cloneNode(false);
 	down.style.border = 'none';
 	down.style.height = height + 'px';
-	down.className = 'geBtnDown';
+	down.className = 'geBtnDown ge-btn-down';
 	stepper.appendChild(down);
 
 	mxEvent.addListener(down, 'click', function(evt)
@@ -1357,8 +1358,8 @@ BaseFormatPanel.prototype.addUnitInput = function(container, unit, right, width,
 	container.appendChild(input);
 
 	var stepper = this.createStepper(input, update, step, null, disableFocus, null, isFloat);
-	stepper.style.marginTop = (marginTop - 2) + 'px';
-	stepper.style.right = right + 'px';
+	stepper.style.marginTop = (marginTop - 4) + 'px';
+	stepper.style.right = right - 3 + 'px';
 	container.appendChild(stepper);
 
 	return input;
@@ -2776,7 +2777,7 @@ TextFormatPanel.prototype.addFont = function(container)
 	stylePanel.style.position = 'relative';
 	stylePanel.style.marginLeft = '-2px';
 	stylePanel.style.borderWidth = '0px';
-	stylePanel.className = 'geToolbarContainer';
+	stylePanel.className = 'geToolbarContainer select-con';
 
 	if (mxClient.IS_QUIRKS)
 	{
@@ -3260,7 +3261,7 @@ TextFormatPanel.prototype.addFont = function(container)
 
 	if (!mxClient.IS_QUIRKS)
 	{
-		stepper.style.right = '20px';
+		stepper.style.right = '18px';
 	}
 
 	stylePanel2.appendChild(stepper);
@@ -5525,7 +5526,7 @@ StyleFormatPanel.prototype.addEffects = function(div)
 			addOption(mxResources.get('glass'), mxConstants.STYLE_GLASS, 0);
 		}
 
-		addOption(mxResources.get('sketch'), 'sketch', 0);
+		// addOption(mxResources.get('sketch'), 'sketch', 0);
 	});
 
 	graph.getModel().addListener(mxEvent.CHANGE, listener);

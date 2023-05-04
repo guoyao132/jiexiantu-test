@@ -3533,8 +3533,8 @@ EditorUi.prototype.updateActionStates = function()
     this.actions.get('editLink').setEnabled(graph.getSelectionCount() == 1);
     this.actions.get('openLink').setEnabled(graph.getSelectionCount() == 1 &&
     	graph.getLinkForCell(graph.getSelectionCell()) != null);
-    this.actions.get('guides').setEnabled(graph.isEnabled());
-    this.actions.get('grid').setEnabled(!this.editor.chromeless || this.editor.editable);
+    // this.actions.get('guides').setEnabled(graph.isEnabled());
+    // this.actions.get('grid').setEnabled(!this.editor.chromeless || this.editor.editable);
 
     var unlocked = graph.isEnabled() && !graph.isCellLocked(graph.getDefaultParent());
     this.menus.get('layout').setEnabled(unlocked);

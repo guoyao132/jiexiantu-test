@@ -588,37 +588,40 @@ var EditDiagramDialog = function(editorUi)
 		div.appendChild(cancelBtn);
 	}
 
-	var select = document.createElement('select');
-	select.style.width = '180px';
-	select.className = 'geBtn';
+	// var select = document.createElement('select');
+	// select.style.width = '180px';
+	// select.className = 'geBtn';
+	//
+	// if (editorUi.editor.graph.isEnabled())
+	// {
+	// 	var replaceOption = document.createElement('option');
+	// 	replaceOption.setAttribute('value', 'replace');
+	// 	mxUtils.write(replaceOption, mxResources.get('replaceExistingDrawing'));
+	// 	select.appendChild(replaceOption);
+	// }
+	//
+	// var newOption = document.createElement('option');
+	// newOption.setAttribute('value', 'new');
+	// mxUtils.write(newOption, mxResources.get('openInNewWindow'));
+	//
+	// if (EditDiagramDialog.showNewWindowOption)
+	// {
+	// 	select.appendChild(newOption);
+	// }
+	//
+	// if (editorUi.editor.graph.isEnabled())
+	// {
+	// 	var importOption = document.createElement('option');
+	// 	importOption.setAttribute('value', 'import');
+	// 	mxUtils.write(importOption, mxResources.get('addToExistingDrawing'));
+	// 	select.appendChild(importOption);
+	// }
+	//
+	// div.appendChild(select);
 
-	if (editorUi.editor.graph.isEnabled())
-	{
-		var replaceOption = document.createElement('option');
-		replaceOption.setAttribute('value', 'replace');
-		mxUtils.write(replaceOption, mxResources.get('replaceExistingDrawing'));
-		select.appendChild(replaceOption);
+	var select = {
+		value: 'replace',
 	}
-
-	var newOption = document.createElement('option');
-	newOption.setAttribute('value', 'new');
-	mxUtils.write(newOption, mxResources.get('openInNewWindow'));
-
-	if (EditDiagramDialog.showNewWindowOption)
-	{
-		select.appendChild(newOption);
-	}
-
-	if (editorUi.editor.graph.isEnabled())
-	{
-		var importOption = document.createElement('option');
-		importOption.setAttribute('value', 'import');
-		mxUtils.write(importOption, mxResources.get('addToExistingDrawing'));
-		select.appendChild(importOption);
-	}
-
-	div.appendChild(select);
-
 	var okBtn = mxUtils.button(mxResources.get('ok'), function()
 	{
 		// Removes all illegal control characters before parsing

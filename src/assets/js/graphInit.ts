@@ -22,6 +22,8 @@ window.mxUtils.getAll([bundle, window.STYLE_PATH + '/default.xml'], function(xhr
   window.EditorUi.prototype.$ElMessageBox = null;
 
   editorui.value = new window.EditorUi(new window.Editor(false, themes));
+
+  editorui.value.setScrollbars(!editorui.value.hasScrollbars());
 }, function()
 {
   document.body.innerHTML = '<div style="margin-top:10%;">Error loading resource files. Please check browser console.</>';

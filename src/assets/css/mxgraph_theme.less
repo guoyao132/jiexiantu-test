@@ -1,5 +1,6 @@
 @import "./mxgraph_theme_params.less";
 
+//主容器
 body{
   background: var(--mxgraph-main-color);
 }
@@ -17,29 +18,171 @@ body{
 .geBackgroundPage{
   border: none !important;
 }
+.geDialog{
+  background: var(--mxgraph-main-color);
+  border: 0;
+  box-shadow: none;
+  color: var(--btn-text);
+}
 
+//顶部菜单
+.geMenubarContainer, .geToolbarContainer, .geHsplit, .geVsplit{
+  background-color: var(--geMenu-bg);
+}
+.geSidebarContainer a, .geMenubarContainer a, .geToolbar a{
+  color: var(--geMenu-text);
+}
+.geMenubarContainer .geItem:hover{
+  background: var(--geMenu-bg-hover);
+}
+.geSeparator{
+  background: var(--geMenu-split) !important;
+}
+.geToolbar{
+  border-top-color: var(--geMenu-split);
+  box-shadow: inset 0 1px 0 0 var(--geMenu-split);
+}
+.geToolbarContainer{
+  border-bottom-color: var(--geMenu-split);
+}
+.geToolbarContainer .geLabel:hover{
+  background: var(--geMenu-bg-hover);
+}
+.geToolbarContainer .geButton:hover{
+  background: var(--geMenu-bg-hover);
+}
 
+.geSprite{
+  background-image: url(../image/icon.png);
+  min-width: max-content;
+}
 
+//菜单下拉
 div.mxPopupMenu {
   box-shadow: 3px 3px 12px var(--mxgraph-menu-shadow);
   background: var(--mxgraph-menu-bg);
   border-image: var(--mxgraph-menu-border);
 }
-
 tr.mxPopupMenuItem {
   color: var(--fong-color);
 }
-
 html tr.mxPopupMenuItemHover {
   background-color: var(--mxgraph-menu-bg-hover);
   color: var(--fong-color);
 }
-
 .mxDisabled {
   opacity: 0.5 !important;
 }
-
 table.mxPopupMenu hr {
   color: var(--fong-color);
   background-color: var(--mxgraph-menu-split-line);
+}
+html td.mxPopupMenuIcon{
+  background: var(--mxgraph-menu-bg);
+}
+td.mxPopupMenuIcon .geIcon:hover{
+  border-color: var(--geMenu-icon-hover);
+}
+
+.geSidebarContainer{
+  background: var(--mxgraph-main-color);
+  border-image: var(--mxgraph-menu-border);
+}
+.geFormatSection{
+  border-image: var(--mxgraph-menu-border);
+}
+.geSidebarContainer > div{
+  color: var(--btn-text) !important;
+}
+
+
+//按钮
+.geColorBtn, .geBtn{
+  border-color: var(--btn-border);
+  background: var(--btn-bg);
+  border-radius: 3px;
+  color: var(--btn-text);
+}
+.geSidebarContainer .geToolbarContainer .geButton{
+  border-color: var(--btn-border) !important;
+  background: var(--btn-bg) !important;
+  border-radius: 3px !important;
+  color: var(--btn-text) !important;
+}
+.select-con .geColorBtn{
+  border-color: var(--btn-border) !important;
+  background: var(--btn-bg) !important;
+  border-radius: 3px !important;
+  color: var(--btn-text) !important;
+}
+.geSidebarContainer button{
+  border-color: var(--btn-border) !important;
+  background: var(--btn-bg) !important;
+  color: var(--btn-text) !important;
+  border-width: 1px;
+  height: 25px;
+  line-height: 25px;
+}
+.geBtn:hover, .geBtn:focus{
+  border-color: var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+}
+select option{
+  background: var(--mxgraph-menu-bg);
+  border-image: var(--mxgraph-menu-border);
+}
+
+input, select, textarea{
+  background: transparent;
+  color: var(--btn-text);
+}
+.geBtnUpDown-con{
+  border-image: var(--mxgraph-menu-border) !important;
+}
+.ge-btn-up{
+  border-image: var(--mxgraph-menu-border) !important;
+}
+td.mxPopupMenuIcon .geIcon{
+  margin: 2px 7px;
+}
+
+td.mxPopupMenuIcon .geIcon font{
+  position: relative;
+  left: -7px;
+}
+td.mxPopupMenuIcon .geIcon div{
+  border-color: #046b70 !important;
+}
+
+.geSidebarContainer .geToolbarContainer .geButton .geIcon div{
+  border-color: #046b70 !important;
+}
+input[type=checkbox] {
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  position: relative;
+}
+input[type=checkbox]::after {
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: " ";
+  font-weight: bold;
+  background: var(--checkbox-bg);
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  border: 1px solid #045B6A;
+  box-sizing: border-box;
+}
+
+input[type=checkbox]:checked::after {
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: " ";
+  background: url('../image/checkbox.png');
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  border: 0;
 }

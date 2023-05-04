@@ -963,7 +963,7 @@ function Dialog(editorUi, elt, w, h, modal, closable, onClose, noScroll, transpa
 /**
  *
  */
-Dialog.backdropColor = 'white';
+Dialog.backdropColor = '#000';
 
 /**
  *
@@ -998,7 +998,7 @@ Dialog.prototype.unlockedImage = (!mxClient.IS_SVG) ? IMAGE_PATH + '/unlocked.pn
 /**
  * Removes the dialog from the DOM.
  */
-Dialog.prototype.bgOpacity = 80;
+Dialog.prototype.bgOpacity = 50;
 
 /**
  * Removes the dialog from the DOM.

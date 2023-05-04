@@ -94,9 +94,9 @@ Actions.prototype.init = function () {
     ui.showDialog(dlg.container, 300, 100, true, true);
     dlg.init();
   }, null, null, Editor.ctrlKey + '+S').isEnabled = isGraphEnabled;
-  this.addAction('saveGraph...', function () {
-    ui.saveFile(true);
-  }, null, null, Editor.ctrlKey + '+Shift+S').isEnabled = isGraphEnabled;
+  // this.addAction('saveGraph...', function () {
+  //   ui.saveFile(true);
+  // }, null, null, Editor.ctrlKey + '+Shift+S').isEnabled = isGraphEnabled;
   this.addAction('export...', function () {
     ui.showDialog(new ExportDialog(ui).container, 300, 296, true, true);
   });
@@ -851,9 +851,9 @@ Actions.prototype.init = function () {
     return graph.foldingEnabled;
   });
   action.isEnabled = isGraphEnabled;
-  // action = this.addAction('scrollbars', function () {
-  //   ui.setScrollbars(!ui.hasScrollbars());
-  // });
+  action = this.addAction('scrollbars', function () {
+    ui.setScrollbars(!ui.hasScrollbars());
+  });
   action.setToggleAction(true);
   action.setSelectedCallback(function () {
     return graph.scrollbars;

@@ -1,13 +1,6 @@
 import editorui from './graphInit';
 import {watch} from 'vue'
 import {getDiagramList, getBySingleId, editDiagramTaskName, editDiagram} from '../../api'
-import data from './data'
-import data1 from './data1'
-import data2 from './data2'
-import data3 from './data3'
-import data4 from './data4'
-import data5 from './data5'
-import dataOld from './data-1'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import 'element-plus/es/components/message-box/style/css'
 import tool from '../js/tool'
@@ -165,20 +158,7 @@ class DisplayUtil {
     if (query.singleId) {
       this.getData(query.singleId);
     } else {
-      let d: any = {
-        'data': data,
-        'data1': data1,
-        'data2': data2,
-        'data3': data3,
-        'data4': data4,
-        'data5': data5,
-      }
-      let t = query.data;
-      if (!t) {
-        return
-      }
-      this.resultDate = d[t];
-      this.drawLiucheng();
+
     }
   }
 
@@ -688,9 +668,7 @@ class DisplayUtil {
 
   //绘制
   drawLiucheng() {
-    let liuchengData1 = this.getLiuchengData()
-    let liuchengData2 = dataOld;
-    this.liuchengData = liuchengData1
+    this.liuchengData = this.getLiuchengData()
     this.liuchengData.sort((v1, v2) => {
       if (Date.parse(v1.date) > Date.parse(v2.date)) {
         return 1;

@@ -1,4 +1,4 @@
-/**
+	/**
  * Copyright (c) 2006-2012, JGraph Ltd
  */
 /**
@@ -30,7 +30,8 @@ Menus.prototype.defaultFontSize = '12';
 /**
  * Sets the default font size.
  */
-Menus.prototype.defaultMenuItems = ['file', 'edit', 'view', 'arrange', 'extras'];
+// Menus.prototype.defaultMenuItems = ['file', 'edit', 'view', 'arrange', 'extras'];
+Menus.prototype.defaultMenuItems = ['file','edit'];
 
 /**
  * Adds the label menu items to the given menu and parent.
@@ -460,7 +461,8 @@ Menus.prototype.init = function()
 			this.addMenuItems(menu, ['formatPanel'], parent);
 		}
 
-		this.addMenuItems(menu, ['outline', 'layers'], parent);
+		// this.addMenuItems(menu, ['outline', 'layers'], parent);
+		this.addMenuItems(menu, ['outline'], parent);
 	})));
 	this.put('viewZoom', new Menu(mxUtils.bind(this, function(menu, parent)
 	{
@@ -482,7 +484,7 @@ Menus.prototype.init = function()
 	})));
 	this.put('file', new Menu(mxUtils.bind(this, function(menu, parent)
 	{
-		this.addMenuItems(menu, ['save', 'saveGraph', '-', 'export'], parent);
+		this.addMenuItems(menu, ['save','-', 'editDiagram', '-', 'print','export'], parent);
 	})));
 	this.put('edit', new Menu(mxUtils.bind(this, function(menu, parent)
 	{
