@@ -31,7 +31,7 @@
           <el-date-picker
             class="input-all"
             v-model="form.planStartDate"
-            type="datetime"
+            type="date"
             format="YYYY-MM-DD"
             value-format="YYYY-MM-DD"
             placeholder="计划开始时间"
@@ -43,7 +43,7 @@
             readonly
             class="input-all"
             v-model="form.planEndDate"
-            type="datetime"
+            type="date"
             format="YYYY-MM-DD"
             placeholder="计划结束时间"
           />
@@ -108,7 +108,7 @@ const rules = reactive<FormRules>({
 const setPlanEndDate = () => {
   let duration = form.duration;
   let planStartDate = new Date(form.planStartDate);
-  if(duration && planStartDate){
+  if(duration != undefined && planStartDate){
 
     //@ts-ignore
     form.planEndDate = displayUtil.timestampToTime(planStartDate.setDate(planStartDate.getDate() + (Number(duration) - 1)))

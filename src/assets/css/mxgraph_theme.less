@@ -186,3 +186,68 @@ input[type=checkbox]:checked::after {
   height: var(--checkbox-size);
   border: 0;
 }
+#app{
+  .el-input__wrapper{
+    background: var(--btn-bg);
+  }
+  .el-input-number.is-controls-right .el-input-number__increase, .el-input-number__decrease, .el-input-number__increase{
+    border-image: var(--mxgraph-menu-border) !important;
+    background: var(--btn-bg);
+  }
+}
+
+.el-popper.is-light{
+  background: var(--mxgraph-main-color) !important;
+  border-image: var(--mxgraph-menu-border) !important;
+  .el-popper__arrow::before{
+    background: var(--mxgraph-main-color) !important;
+  }
+}
+.el-popper{
+  .el-picker-panel__footer{
+    background: var(--mxgraph-main-color);
+  }
+  .el-date-picker{
+    background: var(--mxgraph-main-color);
+  }
+
+  .el-picker-panel .el-time-panel{
+    background: var(--mxgraph-main-color);
+    color: var(--btn-text);
+  }
+  .el-time-spinner__item{
+    color: var(--btn-text);
+  }
+
+  .el-time-spinner__item.is-active:not(.is-disabled){
+    color: var(--btn-text);
+  }
+
+  .el-time-spinner__item:hover:not(.is-disabled):not(.is-active){
+    background: var(--geMenu-bg-hover);
+  }
+  .el-time-panel__btn.confirm{
+    color: var(--btn-text);
+  }
+  .el-time-panel__content::before{
+    border-image: var(--mxgraph-menu-border);
+  }
+  .el-time-panel__footer{
+    border-image: var(--mxgraph-menu-border);
+  }
+  .el-picker-panel .el-time-panel{
+    border-image: var(--mxgraph-menu-border);
+  }
+  .el-date-picker__time-header{
+    border-image: var(--mxgraph-menu-border);
+  }
+  .el-date-table th{
+    border-image: var(--mxgraph-menu-border);
+  }
+  .el-picker-panel__footer{
+    border-image: var(--mxgraph-menu-border);
+  }
+
+
+}
+

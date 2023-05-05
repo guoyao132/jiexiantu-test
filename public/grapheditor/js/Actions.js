@@ -77,7 +77,7 @@ Actions.prototype.init = function () {
           '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + mxUtils.getXml(graph.getSvg(null, null, null, null, null,
             null, null, null, null, null))
         ui.$api.saveScheduleGraph({
-          singleId: ui.$route.singleId,
+          masterPlanId: ui.$route.singleId,
           graphType: 1,
           moduleName: newValue.trim(),
           moduleXml: mxUtils.getPrettyXml(node),

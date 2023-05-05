@@ -735,59 +735,59 @@ var ExportDialog = function(editorUi)
 
 	tbody.appendChild(row);
 
-	row = document.createElement('tr');
+	// row = document.createElement('tr');
+	//
+	// td = document.createElement('td');
+	// td.style.fontSize = '10pt';
+	// mxUtils.write(td, mxResources.get('format') + ':');
+	//
+	// row.appendChild(td);
+	//
+	// var imageFormatSelect = document.createElement('select');
+	// imageFormatSelect.style.width = '180px';
+	//
+	// var pngOption = document.createElement('option');
+	// pngOption.setAttribute('value', 'png');
+	// mxUtils.write(pngOption, mxResources.get('formatPng'));
+	// imageFormatSelect.appendChild(pngOption);
+	//
+	// var gifOption = document.createElement('option');
+	//
+	// if (ExportDialog.showGifOption)
+	// {
+	// 	gifOption.setAttribute('value', 'gif');
+	// 	mxUtils.write(gifOption, mxResources.get('formatGif'));
+	// 	imageFormatSelect.appendChild(gifOption);
+	// }
+	//
+	// var jpgOption = document.createElement('option');
+	// jpgOption.setAttribute('value', 'jpg');
+	// mxUtils.write(jpgOption, mxResources.get('formatJpg'));
+	// imageFormatSelect.appendChild(jpgOption);
+	//
+	// var pdfOption = document.createElement('option');
+	// pdfOption.setAttribute('value', 'pdf');
+	// mxUtils.write(pdfOption, mxResources.get('formatPdf'));
+	// imageFormatSelect.appendChild(pdfOption);
+	//
+	// var svgOption = document.createElement('option');
+	// svgOption.setAttribute('value', 'svg');
+	// mxUtils.write(svgOption, mxResources.get('formatSvg'));
+	// imageFormatSelect.appendChild(svgOption);
+	//
+	// if (ExportDialog.showXmlOption)
+	// {
+	// 	var xmlOption = document.createElement('option');
+	// 	xmlOption.setAttribute('value', 'xml');
+	// 	mxUtils.write(xmlOption, mxResources.get('formatXml'));
+	// 	imageFormatSelect.appendChild(xmlOption);
+	// }
 
-	td = document.createElement('td');
-	td.style.fontSize = '10pt';
-	mxUtils.write(td, mxResources.get('format') + ':');
-
-	row.appendChild(td);
-
-	var imageFormatSelect = document.createElement('select');
-	imageFormatSelect.style.width = '180px';
-
-	var pngOption = document.createElement('option');
-	pngOption.setAttribute('value', 'png');
-	mxUtils.write(pngOption, mxResources.get('formatPng'));
-	imageFormatSelect.appendChild(pngOption);
-
-	var gifOption = document.createElement('option');
-
-	if (ExportDialog.showGifOption)
-	{
-		gifOption.setAttribute('value', 'gif');
-		mxUtils.write(gifOption, mxResources.get('formatGif'));
-		imageFormatSelect.appendChild(gifOption);
-	}
-
-	var jpgOption = document.createElement('option');
-	jpgOption.setAttribute('value', 'jpg');
-	mxUtils.write(jpgOption, mxResources.get('formatJpg'));
-	imageFormatSelect.appendChild(jpgOption);
-
-	var pdfOption = document.createElement('option');
-	pdfOption.setAttribute('value', 'pdf');
-	mxUtils.write(pdfOption, mxResources.get('formatPdf'));
-	imageFormatSelect.appendChild(pdfOption);
-
-	var svgOption = document.createElement('option');
-	svgOption.setAttribute('value', 'svg');
-	mxUtils.write(svgOption, mxResources.get('formatSvg'));
-	imageFormatSelect.appendChild(svgOption);
-
-	if (ExportDialog.showXmlOption)
-	{
-		var xmlOption = document.createElement('option');
-		xmlOption.setAttribute('value', 'xml');
-		mxUtils.write(xmlOption, mxResources.get('formatXml'));
-		imageFormatSelect.appendChild(xmlOption);
-	}
-
-	td = document.createElement('td');
-	td.appendChild(imageFormatSelect);
-	row.appendChild(td);
-
-	tbody.appendChild(row);
+	// td = document.createElement('td');
+	// td.appendChild(imageFormatSelect);
+	// row.appendChild(td);
+	//
+	// tbody.appendChild(row);
 
 	row = document.createElement('tr');
 
@@ -844,135 +844,135 @@ var ExportDialog = function(editorUi)
 
 	tbody.appendChild(row);
 
-	row = document.createElement('tr');
+	// row = document.createElement('tr');
+	//
+	// td = document.createElement('td');
+	// td.style.fontSize = '10pt';
+	// mxUtils.write(td, mxResources.get('dpi') + ':');
+	//
+	// row.appendChild(td);
+	//
+	// var dpiSelect = document.createElement('select');
+	// dpiSelect.style.width = '180px';
+	//
+	// var dpi100Option = document.createElement('option');
+	// dpi100Option.setAttribute('value', '100');
+	// mxUtils.write(dpi100Option, '100dpi');
+	// dpiSelect.appendChild(dpi100Option);
+	//
+	// var dpi200Option = document.createElement('option');
+	// dpi200Option.setAttribute('value', '200');
+	// mxUtils.write(dpi200Option, '200dpi');
+	// dpiSelect.appendChild(dpi200Option);
+	//
+	// var dpi300Option = document.createElement('option');
+	// dpi300Option.setAttribute('value', '300');
+	// mxUtils.write(dpi300Option, '300dpi');
+	// dpiSelect.appendChild(dpi300Option);
+	//
+	// var dpi400Option = document.createElement('option');
+	// dpi400Option.setAttribute('value', '400');
+	// mxUtils.write(dpi400Option, '400dpi');
+	// dpiSelect.appendChild(dpi400Option);
+	//
+	// var dpiCustOption = document.createElement('option');
+	// dpiCustOption.setAttribute('value', 'custom');
+	// mxUtils.write(dpiCustOption, mxResources.get('custom'));
+	// dpiSelect.appendChild(dpiCustOption);
+	//
+	// var customDpi = document.createElement('input');
+	// customDpi.style.width = '180px';
+	// customDpi.style.display = 'none';
+	// customDpi.setAttribute('value', '100');
+	// customDpi.setAttribute('type', 'number');
+	// customDpi.setAttribute('min', '50');
+	// customDpi.setAttribute('step', '50');
+	//
+	// var zoomUserChanged = false;
+	//
+	// mxEvent.addListener(dpiSelect, 'change', function()
+	// {
+	// 	if (this.value == 'custom')
+	// 	{
+	// 		this.style.display = 'none';
+	// 		customDpi.style.display = '';
+	// 		customDpi.focus();
+	// 	}
+	// 	else
+	// 	{
+	// 		customDpi.value = this.value;
+	//
+	// 		if (!zoomUserChanged)
+	// 		{
+	// 			zoomInput.value = this.value;
+	// 		}
+	// 	}
+	// });
+	//
+	// mxEvent.addListener(customDpi, 'change', function()
+	// {
+	// 	var dpi = parseInt(customDpi.value);
+	//
+	// 	if (isNaN(dpi) || dpi <= 0)
+	// 	{
+	// 		customDpi.style.backgroundColor = 'red';
+	// 	}
+	// 	else
+	// 	{
+	// 		customDpi.style.backgroundColor = '';
+	//
+	// 		if (!zoomUserChanged)
+	// 		{
+	// 			zoomInput.value = dpi;
+	// 		}
+	// 	}
+	// });
+	//
+	// td = document.createElement('td');
+	// td.appendChild(dpiSelect);
+	// td.appendChild(customDpi);
+	// row.appendChild(td);
+	//
+	// tbody.appendChild(row);
 
-	td = document.createElement('td');
-	td.style.fontSize = '10pt';
-	mxUtils.write(td, mxResources.get('dpi') + ':');
+	// row = document.createElement('tr');
+	//
+	// td = document.createElement('td');
+	// td.style.fontSize = '10pt';
+	// mxUtils.write(td, mxResources.get('background') + ':');
+	//
+	// row.appendChild(td);
+	//
+	// var transparentCheckbox = document.createElement('input');
+	// transparentCheckbox.setAttribute('type', 'checkbox');
+	// transparentCheckbox.checked = graph.background == null || graph.background == mxConstants.NONE;
+	//
+	// td = document.createElement('td');
+	// td.appendChild(transparentCheckbox);
+	// mxUtils.write(td, mxResources.get('transparent'));
+	//
+	// row.appendChild(td);
+	//
+	// tbody.appendChild(row);
 
-	row.appendChild(td);
-
-	var dpiSelect = document.createElement('select');
-	dpiSelect.style.width = '180px';
-
-	var dpi100Option = document.createElement('option');
-	dpi100Option.setAttribute('value', '100');
-	mxUtils.write(dpi100Option, '100dpi');
-	dpiSelect.appendChild(dpi100Option);
-
-	var dpi200Option = document.createElement('option');
-	dpi200Option.setAttribute('value', '200');
-	mxUtils.write(dpi200Option, '200dpi');
-	dpiSelect.appendChild(dpi200Option);
-
-	var dpi300Option = document.createElement('option');
-	dpi300Option.setAttribute('value', '300');
-	mxUtils.write(dpi300Option, '300dpi');
-	dpiSelect.appendChild(dpi300Option);
-
-	var dpi400Option = document.createElement('option');
-	dpi400Option.setAttribute('value', '400');
-	mxUtils.write(dpi400Option, '400dpi');
-	dpiSelect.appendChild(dpi400Option);
-
-	var dpiCustOption = document.createElement('option');
-	dpiCustOption.setAttribute('value', 'custom');
-	mxUtils.write(dpiCustOption, mxResources.get('custom'));
-	dpiSelect.appendChild(dpiCustOption);
-
-	var customDpi = document.createElement('input');
-	customDpi.style.width = '180px';
-	customDpi.style.display = 'none';
-	customDpi.setAttribute('value', '100');
-	customDpi.setAttribute('type', 'number');
-	customDpi.setAttribute('min', '50');
-	customDpi.setAttribute('step', '50');
-
-	var zoomUserChanged = false;
-
-	mxEvent.addListener(dpiSelect, 'change', function()
-	{
-		if (this.value == 'custom')
-		{
-			this.style.display = 'none';
-			customDpi.style.display = '';
-			customDpi.focus();
-		}
-		else
-		{
-			customDpi.value = this.value;
-
-			if (!zoomUserChanged)
-			{
-				zoomInput.value = this.value;
-			}
-		}
-	});
-
-	mxEvent.addListener(customDpi, 'change', function()
-	{
-		var dpi = parseInt(customDpi.value);
-
-		if (isNaN(dpi) || dpi <= 0)
-		{
-			customDpi.style.backgroundColor = 'red';
-		}
-		else
-		{
-			customDpi.style.backgroundColor = '';
-
-			if (!zoomUserChanged)
-			{
-				zoomInput.value = dpi;
-			}
-		}
-	});
-
-	td = document.createElement('td');
-	td.appendChild(dpiSelect);
-	td.appendChild(customDpi);
-	row.appendChild(td);
-
-	tbody.appendChild(row);
-
-	row = document.createElement('tr');
-
-	td = document.createElement('td');
-	td.style.fontSize = '10pt';
-	mxUtils.write(td, mxResources.get('background') + ':');
-
-	row.appendChild(td);
-
-	var transparentCheckbox = document.createElement('input');
-	transparentCheckbox.setAttribute('type', 'checkbox');
-	transparentCheckbox.checked = graph.background == null || graph.background == mxConstants.NONE;
-
-	td = document.createElement('td');
-	td.appendChild(transparentCheckbox);
-	mxUtils.write(td, mxResources.get('transparent'));
-
-	row.appendChild(td);
-
-	tbody.appendChild(row);
-
-	row = document.createElement('tr');
-
-	td = document.createElement('td');
-	td.style.fontSize = '10pt';
-	mxUtils.write(td, mxResources.get('borderWidth') + ':');
-
-	row.appendChild(td);
-
-	var borderInput = document.createElement('input');
-	borderInput.setAttribute('type', 'number');
-	borderInput.setAttribute('value', ExportDialog.lastBorderValue);
-	borderInput.style.width = '180px';
-
-	td = document.createElement('td');
-	td.appendChild(borderInput);
-	row.appendChild(td);
-
-	tbody.appendChild(row);
+	// row = document.createElement('tr');
+	//
+	// td = document.createElement('td');
+	// td.style.fontSize = '10pt';
+	// mxUtils.write(td, mxResources.get('borderWidth') + ':');
+	//
+	// row.appendChild(td);
+	//
+	// var borderInput = document.createElement('input');
+	// borderInput.setAttribute('type', 'number');
+	// borderInput.setAttribute('value', ExportDialog.lastBorderValue);
+	// borderInput.style.width = '180px';
+	//
+	// td = document.createElement('td');
+	// td.appendChild(borderInput);
+	// row.appendChild(td);
+	//
+	// tbody.appendChild(row);
 	table.appendChild(tbody);
 
 	// Handles changes in the export format
@@ -995,38 +995,41 @@ var ExportDialog = function(editorUi)
 			zoomInput.setAttribute('disabled', 'true');
 			widthInput.setAttribute('disabled', 'true');
 			heightInput.setAttribute('disabled', 'true');
-			borderInput.setAttribute('disabled', 'true');
+			// borderInput.setAttribute('disabled', 'true');
 		}
 		else
 		{
 			zoomInput.removeAttribute('disabled');
 			widthInput.removeAttribute('disabled');
 			heightInput.removeAttribute('disabled');
-			borderInput.removeAttribute('disabled');
+			// borderInput.removeAttribute('disabled');
 		}
 
 		if (imageFormatSelect.value === 'png' || imageFormatSelect.value === 'svg' || imageFormatSelect.value === 'pdf')
 		{
-			transparentCheckbox.removeAttribute('disabled');
+			// transparentCheckbox.removeAttribute('disabled');
 		}
 		else
 		{
-			transparentCheckbox.setAttribute('disabled', 'disabled');
+			// transparentCheckbox.setAttribute('disabled', 'disabled');
 		}
 
 		if (imageFormatSelect.value === 'png')
 		{
-			dpiSelect.removeAttribute('disabled');
-			customDpi.removeAttribute('disabled');
+			// dpiSelect.removeAttribute('disabled');
+			// customDpi.removeAttribute('disabled');
 		}
 		else
 		{
-			dpiSelect.setAttribute('disabled', 'disabled');
-			customDpi.setAttribute('disabled', 'disabled');
+			// dpiSelect.setAttribute('disabled', 'disabled');
+			// customDpi.setAttribute('disabled', 'disabled');
 		}
 	};
 
-	mxEvent.addListener(imageFormatSelect, 'change', formatChanged);
+	// mxEvent.addListener(imageFormatSelect, 'change', formatChanged);
+	var imageFormatSelect = {
+		value: 'pdf',
+	}
 	formatChanged();
 
 	function checkValues()
@@ -1126,18 +1129,19 @@ var ExportDialog = function(editorUi)
 	    	var name = nameInput.value;
 			var format = imageFormatSelect.value;
 	    	var s = Math.max(0, parseFloat(zoomInput.value) || 100) / 100;
-			var b = Math.max(0, parseInt(borderInput.value));
+			var b = Math.max(0, 0);
 			var bg = graph.background;
-			var dpi = Math.max(1, parseInt(customDpi.value));
+			var dpi = Math.max(1, 100);
 
-			if ((format == 'svg' || format == 'png' || format == 'pdf') && transparentCheckbox.checked)
-			{
-				bg = null;
-			}
-			else if (bg == null || bg == mxConstants.NONE)
-			{
-				bg = '#ffffff';
-			}
+			// if ((format == 'svg' || format == 'png' || format == 'pdf') && transparentCheckbox.checked)
+			// {
+			// 	bg = null;
+			// }
+			// else if (bg == null || bg == mxConstants.NONE)
+			// {
+			// 	bg = '#073746';
+			// }
+			bg = '#073746';
 
 			ExportDialog.lastBorderValue = b;
 			ExportDialog.exportFile(editorUi, name, format, bg, s, b, dpi);
@@ -1237,6 +1241,8 @@ ExportDialog.exportFile = function(editorUi, name, format, bg, s, b, dpi)
 			editorUi.$api.exportFile({
 				fileName: encodeURIComponent(name),
 				content: encodeURIComponent(mxUtils.getXml(root)),
+				w,
+				h
 			}).then(resp => {
 				const content = resp;
 				const blob = new Blob([content]);
@@ -1273,10 +1279,8 @@ ExportDialog.saveLocalFile = function(editorUi, data, filename, format)
 	if (data.length < MAX_REQUEST_SIZE)
 	{
 		editorUi.hideDialog();
-		console.log(editorUi);
 		var req = new mxXmlRequest(SAVE_URL, 'xml=' + encodeURIComponent(data) + '&filename=' +
 			encodeURIComponent(filename) + '&format=' + format);
-		console.log(req);
 		// req.simulate(document, '_blank');
 	}
 	else

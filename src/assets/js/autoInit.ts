@@ -6,6 +6,7 @@ import 'element-plus/es/components/message-box/style/css'
 import tool from '../js/tool'
 import type {sendMsgData} from '../js/tool'
 import COLOROBJ from './color'
+import img from '../image/checkbox.png'
 
 const MESSAGE_DURATION: number = 3000;
 const Line2Type: string[] = ['FS', 'SS'];
@@ -165,7 +166,7 @@ class DisplayUtil {
   getData(singleId: string) {
     this.singleId = singleId;
     getBySingleId({
-      singleId: singleId
+      masterPlanId: singleId
     }).then((resp: any) => {
       let result = resp.result || {};
       let moduleXml = result.moduleXml;
@@ -1336,7 +1337,7 @@ class DisplayUtil {
       let lineBiaoshi = `${l.id}-${l.toId}`;
       let newLeval = this.upLineLevel(l, level);
       if (newLeval !== level) {
-        let value = [newLeval, l.taskName];
+        let value = [Number(newLeval), l.taskName];
         if (lineLevelObj[lineBiaoshi]) {
           lineLevelObj[lineBiaoshi].push(value)
         } else {
@@ -1406,7 +1407,7 @@ class DisplayUtil {
   setUpLineValue(id: number, toId: number, taskName: string, level: number) {
     let lineBiaoshi = `${id}-${toId}`;
     let lineLevelArr = this.lineLevelObj[lineBiaoshi];
-    let arr = [level, taskName];
+    let arr = [Number(level), taskName];
     if (lineLevelArr) {
       let index = lineLevelArr.findIndex((lv: any) => lv[1] === taskName);
       if (index === -1) {
@@ -1518,7 +1519,6 @@ class DisplayUtil {
       a.unshift('-1')
       arr.push(a);
     }
-    console.log(arr);
     this.fenquPoint = arr;
   }
 
@@ -1601,8 +1601,10 @@ class DisplayUtil {
     let lines = obj?.lines;
     lines?.forEach(v => {
       {
-        arr.add(v.toId);
-        this.getPointAllChildPoint(v.toId, arr);
+        if(!arr.has(v.toId)){
+          arr.add(v.toId);
+          this.getPointAllChildPoint(v.toId, arr);
+        }
       }
     })
     return arr;
@@ -1693,8 +1695,8 @@ class DisplayUtil {
             l
           ]
         }
-        let list: any = this.fenquPoint.find((f: any) => f[0] === lineSdateObj.splitParentId)
-        list.push(id);
+        let list: any = this.fenquPoint.find((f: any) => f[0] === lineSdateObj.splitParentId);
+        list && list.push(id);
         startPoints.push(o)
         this.liuchengData.push(o)
         let toObj = this.liuchengData.find((d: LiuChengData) => d.id === l.toId);
@@ -2574,12 +2576,28 @@ class DisplayUtil {
     this.addMainEdge();
     this.addBiaochiTitle();
     this.addBottomCon();
+
+    // 添加底层容器
+    let minX = this.leftTopPoint[0];
+    let maxX = this.rightBottomPoint[0];
+    let minY = this.leftTopPoint[1];
+    let maxY = this.rightBottomPoint[1];
+    minY = minY - this.biaochiHeight * 3
+    let bottomHei = this.bottomHei;
+    maxY = maxY + bottomHei
+    let w = maxX - minX + 60;
+    let h = maxY - minY + 60;
+    console.log(img);
+    let styleStr = `strokeColor=none;movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;labelBackgroundColor=none;fillColor=url(${img});opacity=100;`;
+    let id = 'quyu-' + this.quyuList.length
+    let qy = this.graph.insertVertex(this.parentCell, id, null, minX - 30, minY - 30, w, h, styleStr)
+    this.quyuList.push(id)
   }
 
   // 添加主边框
   addMainEdge() {
     let levelArr = ([...new Set(Object.values(this.pointLevelObj))] as number[]).filter((l: number) => l != undefined);
-    let lineLevalArr = Object.values(this.lineLevelObj).map((l: any) => l[0]).flat(1).filter((l: any) => !isNaN(l));
+    let lineLevalArr = Object.values(this.lineLevelObj).map((l: any) => l.map((lc:any) => lc[0])).flat(1).filter((l: any) => !isNaN(l));
     lineLevalArr = [...new Set(lineLevalArr)];
     let minLevel = Math.min(...levelArr, ...lineLevalArr);
     let maxLevel = Math.max(...levelArr, ...lineLevalArr);
@@ -2634,7 +2652,7 @@ class DisplayUtil {
       let x = (this.dateSubLength) * (i + needNum);
       let day = dStr.split('.')[2];
       if (x < maxX) {
-        if (i % (10 / this.dateMinSub) === 0) {
+        if (i % 10 === 0) {
           biaoChiLen = 12;
           this.graph.insertVertex(this.parentCell, null, i * this.dateMinSub, x, minY - this.biaochiHeight * 3 + this.biaochiHeight / 2, 0, 0, biaochiLabelStyle);
         }
@@ -2654,6 +2672,7 @@ class DisplayUtil {
       let m = i.getMonth() + 1;
       i.setMonth(m);
       i.setDate(1);
+      i.setDate(this.dateMinSub);
       if (i < new Date(endDate)) {
         let dStr = this.formatTime(i, this.dateFormatType);
         monthArr.push(dStr);
@@ -2947,16 +2966,17 @@ class DisplayUtil {
     }
   }
 
-  addFenqu(x: number, y: number, w: number, h: number, name: string) {
+  addFenqu(x: number, y: number, w: number, h: number, name?: string, color?:string) {
     let colorIndex = this.quyuList.length % 2
-    let color = COLOROBJ.FENQU_COLOR_LIST[colorIndex];
+    color = color || COLOROBJ.FENQU_COLOR_LIST[colorIndex];
     let styleStr = `strokeWidth=3;strokeColor=${COLOROBJ.BORDER_COLOR};movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;labelBackgroundColor=none;fillColor=${color};opacity=100;`;
     let id = 'quyu-' + this.quyuList.length
     let qy = this.graph.insertVertex(this.parentCell, id, null, x, y, w, h, styleStr)
-
-    let fontStyle = `fontColor=${COLOROBJ.FONTCOLOR};`;
-    let styleStrName = `text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=${this.fontSize};align=left;` + fontStyle;
-    this.graph.insertVertex(qy, null, name,  0.001, 0.5, 0, 0, styleStrName, true);
+    if(name){
+      let fontStyle = `fontColor=${COLOROBJ.FONTCOLOR};`;
+      let styleStrName = `text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=${this.fontSize};align=left;` + fontStyle;
+      this.graph.insertVertex(qy, null, name,  0.001, 0.5, 0, 0, styleStrName, true);
+    }
     this.quyuList.push(id)
     return qy;
   }

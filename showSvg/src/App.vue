@@ -22,7 +22,7 @@ const init = async () => {
   await router.isReady()
   if (query.value.singleId) {
     getBySingleId({
-      singleId: query.value.singleId
+      masterPlanId: query.value.singleId
     }).then((resp: any) => {
       let result = resp.result || {};
       let svgStr = result.svgXml;
