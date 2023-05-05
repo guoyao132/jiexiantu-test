@@ -1220,8 +1220,7 @@ ExportDialog.exportFile = function(editorUi, name, format, bg, s, b, dpi)
 	    imgExport.drawState(graph.getView().getState(graph.model.root), xmlCanvas);
 
 		// Puts request data together
-			console.log(mxUtils.getXml(root));
-			var param = 'xml=' + encodeURIComponent(mxUtils.getXml(root));
+		var param = 'xml=' + encodeURIComponent(mxUtils.getXml(root));
 		var w = Math.ceil(bounds.width * s / graph.view.scale + 2 * b);
 		var h = Math.ceil(bounds.height * s / graph.view.scale + 2 * b);
 

@@ -169,7 +169,7 @@ class DisplayUtil {
     }).then((resp: any) => {
       let result = resp.result || {};
       let moduleXml = result.moduleXml;
-      if (moduleXml) {
+      if (!this.isTiaoshi && moduleXml) {
         //更新线
         let data = window.Graph.zapGremlins(moduleXml)
         this.graphModel.beginUpdate()
@@ -701,6 +701,7 @@ class DisplayUtil {
     this.graph.fit(10, false, 0, true, false, false);
   }
 
+  //添加线所谓点位的线
   addPointLine(){
     this.linePointArr.forEach((lp:any) => {
       let level:number;
@@ -1517,6 +1518,7 @@ class DisplayUtil {
       a.unshift('-1')
       arr.push(a);
     }
+    console.log(arr);
     this.fenquPoint = arr;
   }
 

@@ -7,6 +7,7 @@ declare module '*.vue' {
 }
 
 declare module 'element-plus/dist/locale/zh-cn.mjs';
+declare module 'gy-zoom-svg';
 
 declare interface Window{
   mxResources: any,

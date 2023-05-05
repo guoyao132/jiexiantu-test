@@ -12,7 +12,7 @@ import {computed, ref, onMounted} from 'vue'
 import type {Ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {getBySingleId} from '../../src/api'
-import ZoomLi from "../../src/assets/js/zoom";
+import ZoomSvg from "gy-zoom-svg";
 
 const svgMain: Ref<HTMLElement | null> = ref(null);
 const route = useRoute();
@@ -29,7 +29,7 @@ const init = async () => {
       if (svgMain.value) {
         svgMain.value.innerHTML = svgStr;
         let svgCon = svgMain.value.querySelector('svg') || svgMain.value;
-        new ZoomLi(svgCon, svgMain.value)
+        new ZoomSvg(svgCon, svgMain.value)
       }
     })
   }
