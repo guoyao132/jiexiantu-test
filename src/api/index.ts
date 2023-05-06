@@ -10,10 +10,17 @@ export const addDiagram = (data: any) => post({url: `${baseurl}/rtSingleArrowDia
 export const removeDiagram = (data: any) => get({url: `${baseurl}/rtSingleArrowDiagram/removeDiagram`, data});
 export const editDiagramTaskName = (data: any) => post({url: `${baseurl}/rtSingleArrowDiagram/editTaskName`, data});
 export const editDiagram = (data: any) => post({url: `${baseurl}/rtSingleArrowDiagram/editDiagram`, data});
-export const exportFile = (data: any) => ajaxFile({
+export const exportPdfFile = (data: any) => ajaxFile({
   method: 'post',
   // contenType: 'application/x-www-form-urlencoded',
   contenType: 'application/json',
   url: `${baseurl}/xmlToPdf/textMake`,
+  data
+});
+export const exportImgFile = (data: any) => ajaxFile({
+  method: 'post',
+  // contenType: 'application/x-www-form-urlencoded',
+  contenType: 'application/json',
+  url: `${baseurl}/xmlToPdf/imageMake`,
   data
 });

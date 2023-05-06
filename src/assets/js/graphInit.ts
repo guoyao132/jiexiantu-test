@@ -1,5 +1,5 @@
 import {ref} from 'vue'
-import {saveScheduleGraph, removeDiagram, exportFile} from '../../api'
+import {saveScheduleGraph, removeDiagram, exportPdfFile, exportImgFile} from '../../api'
 let bundle = window.mxResources.getDefaultBundle(window.RESOURCE_BASE, window.mxLanguage) ||
   window.mxResources.getSpecialBundle(window.RESOURCE_BASE, window.mxLanguage);
 let editorui:any  = ref(null);
@@ -16,7 +16,8 @@ window.mxUtils.getAll([bundle, window.STYLE_PATH + '/default.xml'], function(xhr
   window.EditorUi.prototype.$api = {
     saveScheduleGraph,
     removeDiagram,
-    exportFile,
+    exportPdfFile,
+    exportImgFile
   }
   window.EditorUi.prototype.$route = null;
   window.EditorUi.prototype.$ElMessageBox = null;

@@ -735,22 +735,22 @@ var ExportDialog = function(editorUi)
 
 	tbody.appendChild(row);
 
-	// row = document.createElement('tr');
-	//
-	// td = document.createElement('td');
-	// td.style.fontSize = '10pt';
-	// mxUtils.write(td, mxResources.get('format') + ':');
-	//
-	// row.appendChild(td);
-	//
-	// var imageFormatSelect = document.createElement('select');
-	// imageFormatSelect.style.width = '180px';
-	//
-	// var pngOption = document.createElement('option');
-	// pngOption.setAttribute('value', 'png');
-	// mxUtils.write(pngOption, mxResources.get('formatPng'));
-	// imageFormatSelect.appendChild(pngOption);
-	//
+	row = document.createElement('tr');
+
+	td = document.createElement('td');
+	td.style.fontSize = '10pt';
+	mxUtils.write(td, mxResources.get('format') + ':');
+
+	row.appendChild(td);
+
+	var imageFormatSelect = document.createElement('select');
+	imageFormatSelect.style.width = '180px';
+
+	var pngOption = document.createElement('option');
+	pngOption.setAttribute('value', 'png');
+	mxUtils.write(pngOption, mxResources.get('formatPng'));
+	imageFormatSelect.appendChild(pngOption);
+
 	// var gifOption = document.createElement('option');
 	//
 	// if (ExportDialog.showGifOption)
@@ -759,22 +759,22 @@ var ExportDialog = function(editorUi)
 	// 	mxUtils.write(gifOption, mxResources.get('formatGif'));
 	// 	imageFormatSelect.appendChild(gifOption);
 	// }
-	//
+
 	// var jpgOption = document.createElement('option');
 	// jpgOption.setAttribute('value', 'jpg');
 	// mxUtils.write(jpgOption, mxResources.get('formatJpg'));
 	// imageFormatSelect.appendChild(jpgOption);
-	//
-	// var pdfOption = document.createElement('option');
-	// pdfOption.setAttribute('value', 'pdf');
-	// mxUtils.write(pdfOption, mxResources.get('formatPdf'));
-	// imageFormatSelect.appendChild(pdfOption);
-	//
+
+	var pdfOption = document.createElement('option');
+	pdfOption.setAttribute('value', 'pdf');
+	mxUtils.write(pdfOption, mxResources.get('formatPdf'));
+	imageFormatSelect.appendChild(pdfOption);
+
 	// var svgOption = document.createElement('option');
 	// svgOption.setAttribute('value', 'svg');
 	// mxUtils.write(svgOption, mxResources.get('formatSvg'));
 	// imageFormatSelect.appendChild(svgOption);
-	//
+
 	// if (ExportDialog.showXmlOption)
 	// {
 	// 	var xmlOption = document.createElement('option');
@@ -783,11 +783,11 @@ var ExportDialog = function(editorUi)
 	// 	imageFormatSelect.appendChild(xmlOption);
 	// }
 
-	// td = document.createElement('td');
-	// td.appendChild(imageFormatSelect);
-	// row.appendChild(td);
-	//
-	// tbody.appendChild(row);
+	td = document.createElement('td');
+	td.appendChild(imageFormatSelect);
+	row.appendChild(td);
+
+	tbody.appendChild(row);
 
 	row = document.createElement('tr');
 
@@ -1026,10 +1026,7 @@ var ExportDialog = function(editorUi)
 		}
 	};
 
-	// mxEvent.addListener(imageFormatSelect, 'change', formatChanged);
-	var imageFormatSelect = {
-		value: 'pdf',
-	}
+	mxEvent.addListener(imageFormatSelect, 'change', formatChanged);
 	formatChanged();
 
 	function checkValues()
@@ -1238,7 +1235,14 @@ ExportDialog.exportFile = function(editorUi, name, format, bg, s, b, dpi)
 			// 	'&w=' + w + '&h=' + h + '&' + param +
 			// 	'&dpi=' + dpi);
 			// req.simulate(document, '_blank');
-			editorUi.$api.exportFile({
+			let funName = 'exportImgFile';
+			if(format === 'pdf'){
+				funName = 'exportPdfFile';
+				w = w + 60;
+				h = h + 60;
+
+			}
+			editorUi.$api[funName]({
 				fileName: encodeURIComponent(name),
 				content: encodeURIComponent(mxUtils.getXml(root)),
 				w,

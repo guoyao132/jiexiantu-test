@@ -6,7 +6,6 @@ import 'element-plus/es/components/message-box/style/css'
 import tool from '../js/tool'
 import type {sendMsgData} from '../js/tool'
 import COLOROBJ from './color'
-import img from '../image/checkbox.png'
 
 const MESSAGE_DURATION: number = 3000;
 const Line2Type: string[] = ['FS', 'SS'];
@@ -2587,8 +2586,7 @@ class DisplayUtil {
     maxY = maxY + bottomHei
     let w = maxX - minX + 60;
     let h = maxY - minY + 60;
-    console.log(img);
-    let styleStr = `strokeColor=none;movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;labelBackgroundColor=none;fillColor=url(${img});opacity=100;`;
+    let styleStr = `rotatable=0;strokeColor=none;movable=0;deletable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;labelBackgroundColor=none;fillColor=#073746;opacity=100;`;
     let id = 'quyu-' + this.quyuList.length
     let qy = this.graph.insertVertex(this.parentCell, id, null, minX - 30, minY - 30, w, h, styleStr)
     this.quyuList.push(id)
