@@ -1186,12 +1186,28 @@ PrintDialog.prototype.create = function(editorUi)
 	{
 		onePageCheckBox.checked = !onePageCheckBox.checked;
 		pageCountCheckBox.checked = !onePageCheckBox.checked;
+		if (pageCountCheckBox.checked)
+		{
+			pageCountInput.removeAttribute('disabled');
+		}
+		else
+		{
+			pageCountInput.setAttribute('disabled', 'disabled');
+		}
 		mxEvent.consume(evt);
 	});
 
 	mxEvent.addListener(onePageCheckBox, 'change', function()
 	{
 		pageCountCheckBox.checked = !onePageCheckBox.checked;
+		if (pageCountCheckBox.checked)
+		{
+			pageCountInput.removeAttribute('disabled');
+		}
+		else
+		{
+			pageCountInput.setAttribute('disabled', 'disabled');
+		}
 	});
 
 	row.appendChild(td);
@@ -1213,6 +1229,14 @@ PrintDialog.prototype.create = function(editorUi)
 	{
 		pageCountCheckBox.checked = !pageCountCheckBox.checked;
 		onePageCheckBox.checked = !pageCountCheckBox.checked;
+		if (pageCountCheckBox.checked)
+		{
+			pageCountInput.removeAttribute('disabled');
+		}
+		else
+		{
+			pageCountInput.setAttribute('disabled', 'disabled');
+		}
 		mxEvent.consume(evt);
 	});
 
@@ -1321,9 +1345,8 @@ PrintDialog.prototype.create = function(editorUi)
 			autoOrigin = true;
 		}
 
-		var preview = PrintDialog.createPrintPreview(graph, scale, pf, border, x0, y0, autoOrigin);
+		var preview = PrintDialog.createPrintPreview(graph, scale, pf, border, -100, -100, autoOrigin);
 		preview.open();
-
 		if (print)
 		{
 			PrintDialog.printPreview(preview);
@@ -1417,11 +1440,12 @@ PrintDialog.createPrintPreview = function(graph, scale, pf, border, x0, y0, auto
 	preview.printBackgroundImage = true;
 	preview.autoOrigin = autoOrigin;
 	var bg = graph.background;
-
-	if (bg == null || bg == '' || bg == mxConstants.NONE)
-	{
-		bg = '#ffffff';
-	}
+	//
+	// if (bg == null || bg == '' || bg == mxConstants.NONE)
+	// {
+	// 	bg = '#ffffff';
+	// }
+	bg = '#073746';
 
 	preview.backgroundColor = bg;
 
