@@ -9,6 +9,9 @@ import COLOROBJ from './color'
 
 const MESSAGE_DURATION: number = 3000;
 const Line2Type: string[] = ['FS', 'SS'];
+const SCHEDULESTATE_FINISH = '已完成';
+const SCHEDULESTATE_INPROGRESS = '进行中';
+const SCHEDULESTATE_DEFAULT = '待开展';
 
 interface LiuChengLineData {
   toId: number,
@@ -19,6 +22,7 @@ interface LiuChengLineData {
   date?: string,
   taskName?: string,
   serialNumber?: string,
+  scheduleState?: string,
 }
 
 interface LiuChengData {
@@ -29,6 +33,7 @@ interface LiuChengData {
   lineName?: string,
   splitParentId?: string,
   len?: number,
+  scheduleState?: string[],
   lines?: LiuChengLineData[],
 }
 
@@ -77,6 +82,7 @@ class DisplayUtil {
   focusCellId: string;
   allLinePoint: number[][];
   fenquPoint: Array<Array<number | string>>;
+  noFenquPointArr: Array<number>;
   splitParentIds: string[];
   linePointArr: any; // 将线当成点的数组
   isTiaoshi: boolean;
@@ -128,6 +134,7 @@ class DisplayUtil {
     this.focusCellId = '';
     this.allLinePoint = [];
     this.fenquPoint = [];
+    this.noFenquPointArr = [];
     this.splitParentIds = [];
     this.linePointArr = [];
   }
@@ -267,6 +274,7 @@ class DisplayUtil {
         return {
           serialNumber: l.serialNumber,
           taskName: l.taskName,
+          scheduleState: l.scheduleState,
           level: l.isPivotal === '1' ? 1 : 0,
           date: fD || null
         };
@@ -282,6 +290,7 @@ class DisplayUtil {
             serialNumber: pointSerialNumber,
             level: v.isPivotal === '1' ? 1 : 0,
             taskName: v.taskName,
+            scheduleState: v.scheduleState,
             date: ffDate || null
           }],
         };
@@ -306,6 +315,7 @@ class DisplayUtil {
             serialNumber: pointSerialNumber,
             level: v.isPivotal === '1' ? 1 : 0,
             taskName: v.taskName,
+            scheduleState: v.scheduleState,
             date: ffDate || null
           }],
           ffDate,
@@ -376,6 +386,7 @@ class DisplayUtil {
                 childLine: [{
                   serialNumber: pointSerialNumber,
                   level: v.isPivotal === '1' ? 1 : 0,
+                  scheduleState: v.scheduleState,
                   taskName: v.taskName,
                 }],
               };
@@ -575,6 +586,8 @@ class DisplayUtil {
       let lines: LiuChengLineData[] = [];
       let childLine: any = p.childLine;
       // FFLineObj
+      let scheduleState:string[] = [];
+      let level = [p.level];
       childLine.forEach((c: any) => {
         if (c.toId) {
           let obj = pointArr.find((p1: any) => p1.linShiId === c.toId);
@@ -603,16 +616,20 @@ class DisplayUtil {
               date: c.date,
               taskName: c.taskName,
               serialNumber: c.serialNumber,
+              scheduleState: c.scheduleState,
             })
           } else {
             console.error(serialNumber);
           }
         }
+        scheduleState.push(c.scheduleState);
+        level.push(c.level);
       })
       resultFormatDate.push({
         id: p.id,
         date: p.date,
-        level: p.level,
+        level: level.includes(1) ? 1 : 0,
+        scheduleState,
         splitParentId: p.splitParentId,
         lines: lines
       })
@@ -685,6 +702,7 @@ class DisplayUtil {
     this.addMoreStartPoint();
     this.addLineLevel();
     this.addPointLine()
+    this.setFenqu()
     this.graphModel.beginUpdate()
     this.addAllEdge();
     this.addPointCell();
@@ -1484,7 +1502,7 @@ class DisplayUtil {
     let level: number;
     let lineLevelArr = this.lineLevelObj[lineBiaoshi];
     let lineLevel = !lineLevelArr ? null : lineLevelArr.find((lv: any) => lv[1] === lineObj.taskName);
-    if (lineLevel !== null) {
+    if (lineLevel) {
       level = lineLevel[0];
     } else {
       let sLevel = this.pointLevelObj[lineObj.id] || 0;
@@ -1519,15 +1537,23 @@ class DisplayUtil {
       arr.push(a);
     }
     this.fenquPoint = arr;
+    this.noFenquPointArr = this.liuchengData.filter((r: any) => !r.splitParentId).map((r: any) => r.id);
   }
 
   //设置分区
   setFenqu(){
     if(this.fenquPoint.length !== 0){
       let prevMax:number = -1;
+      if(this.noFenquPointArr.length !== 0){
+        let noFenquPointLevel = this.noFenquPointArr.map((id: number) => this.pointLevelObj[id] || 0);
+        prevMax = Math.max(...noFenquPointLevel);
+      }
       this.fenquPoint.forEach((fenqu, index:number) => {
         let serialNumber = fenqu[0];
         let points = fenqu.slice(1) as number[];
+        if(points.length === 0){
+          return
+        }
         let allPointIdLevel = points.map((id: number) => this.pointLevelObj[id]);
         if(index !== 0){
           let min = Math.min(...allPointIdLevel);
@@ -1550,13 +1576,16 @@ class DisplayUtil {
       this.fenquPoint.forEach((fenqu, index:number) => {
         let serialNumber = fenqu[0];
         let points = fenqu.slice(1) as number[];
+        if(points.length === 0){
+          return;
+        }
         let allPointIdLevel = points.map((id: number) => this.pointLevelObj[id]);
         let lineLevelArr = this.getAllLinesLevelByIds(points);
         let levelArr = [...allPointIdLevel, ...lineLevelArr];
         let minLevel = Math.min(...levelArr)
         let maxLevel = Math.max(...levelArr)
-        let minY = (minLevel - 1) * this.ySubLength;
-        let maxY = (maxLevel + 1) * this.ySubLength;
+        let minY = (minLevel - 0.5) * this.ySubLength;
+        let maxY = (maxLevel + 0.5) * this.ySubLength;
         // let dateArr = this.getDateById(points);
         // let timeArr = dateArr.map(v => v.time);
         // let rDate = this.resultDate.filter((r:any) => r.splitParentId === serialNumber);
@@ -2293,6 +2322,28 @@ class DisplayUtil {
         fillColor = COLOROBJ.POINT_FILLCOLOR_IMP;
         fontColor = COLOROBJ.POINT_FONTCOLOR_IMP;
       }
+      let scheduleState = v.scheduleState;
+      //包含进行中
+      if(scheduleState?.includes(SCHEDULESTATE_INPROGRESS)){
+        strokeColor = COLOROBJ.POINT_STROKECOLOR_INPROGRESS;
+        fontColor = COLOROBJ.POINT_FONTCOLOR_INPROGRESS;
+        fillColor = COLOROBJ.POINT_FILLCOLOR_INPROGRESS;
+        if (v.level === 1) {
+          strokeColor = COLOROBJ.POINT_STROKECOLOR_IMP_INPROGRESS;
+          fontColor = COLOROBJ.POINT_FONTCOLOR_IMP_INPROGRESS;
+          fillColor = COLOROBJ.POINT_FILLCOLOR_IMP_INPROGRESS;
+        }
+      //全部已完成
+      }else if(!scheduleState?.includes(SCHEDULESTATE_DEFAULT) && scheduleState?.includes(SCHEDULESTATE_FINISH)){
+        strokeColor = COLOROBJ.POINT_STROKECOLOR_FINISH;
+        fontColor = COLOROBJ.POINT_FONTCOLOR_FINISH;
+        fillColor = COLOROBJ.POINT_FILLCOLOR_FINISH;
+        if (v.level === 1) {
+          strokeColor = COLOROBJ.POINT_STROKECOLOR_IMP_FINISH;
+          fontColor = COLOROBJ.POINT_FONTCOLOR_IMP_FINISH;
+          fillColor = COLOROBJ.POINT_FILLCOLOR_IMP_FINISH;
+        }
+      }
       let cell:any;
       if(v.lineName){
         // let s = `whiteSpace=wrap;text;html=1;align=right;verticalAlign=middle;resizable=0;labelPosition=left;spacingRight=20;strokeColor=#000;strokeWidth=${this.strokeWidth};`;
@@ -2325,13 +2376,33 @@ class DisplayUtil {
         return;
       }
       let lineBiaoshi = `${val.id}-${val.toId}`;
-      let strokeColor = COLOROBJ.POINT_STROKECOLOR;
+      let strokeColor = COLOROBJ.LINE_STROKECOLOR;
+      let fontColor = COLOROBJ.FONTCOLOR;
       if (val.level === 1) {
-        strokeColor = COLOROBJ.POINT_STROKECOLOR_IMP;
+        strokeColor = COLOROBJ.LINE_STROKECOLOR_IMP;
       }
       if (val.type === 2) {
-        strokeColor = COLOROBJ.POINT_STROKECOLOR;
+        strokeColor = COLOROBJ.LINE_STROKECOLOR;
       }
+      let scheduleState = val.scheduleState;
+      //包含进行中
+      if(scheduleState?.includes(SCHEDULESTATE_INPROGRESS)){
+        strokeColor = COLOROBJ.LINE_STROKECOLOR_INPROGRESS;
+        fontColor = COLOROBJ.LINE_STROKECOLOR_INPROGRESS;
+        if (val.level === 1) {
+          strokeColor = COLOROBJ.LINE_STROKECOLOR_IMP_INPROGRESS;
+          fontColor = COLOROBJ.LINE_STROKECOLOR_IMP_INPROGRESS;
+        }
+        //全部已完成
+      }else if(!scheduleState?.includes(SCHEDULESTATE_DEFAULT) && scheduleState?.includes(SCHEDULESTATE_FINISH)){
+        strokeColor = COLOROBJ.LINE_STROKECOLOR_FINISH;
+        fontColor = COLOROBJ.LINE_STROKECOLOR_FINISH;
+        if (val.level === 1) {
+          strokeColor = COLOROBJ.LINE_STROKECOLOR_IMP_FINISH;
+          fontColor = COLOROBJ.LINE_STROKECOLOR_IMP_FINISH;
+        }
+      }
+
       let exitX = 1;
       let exitY = 0.5;
       let entryX = 0;
@@ -2560,7 +2631,7 @@ class DisplayUtil {
       }
       let lineId = val.serialNumber ? `line-${val.serialNumber}` : null;
       let labelWdith = x2 - x1 - 25;
-      let fontStyle = `fontColor=${COLOROBJ.FONTCOLOR};`;
+      let fontStyle = `fontColor=${fontColor};`;
       let e1 = this.graph.insertEdge(this.dataCellObj[val.id], lineId, lineValue, this.dataCellObj[val.id], this.dataCellObj[val.toId], styleStr + fontStyle + 'labelWidth=' + labelWdith);
       e1.geometry.points = points
       addLineArr.push(lineBiaoshi);
@@ -2766,11 +2837,13 @@ class DisplayUtil {
     this.addLineEdge([maxX - jiangeNum * jiange, maxY + bottomHei / 2], [maxX, maxY + bottomHei / 2]); //下横线
 
     //   绘制图例
-    let tuliLen = 500;
     let tuliTitle = [
       ['非关键性工作', '自由时差'],
-      ['关键工作', '需工作'],
+      ['关键工作', '虚工作'],
+      ['非关键性工<br>作已完成', '非关键性工<br>作进行中'],
+      ['关键工作<br>已完成', '关键工作<br>进行中'],
     ];
+    let tuliLen = 500;
     let tuliStyleStr = `movable=0;deletable=0;resizable=0;connectable=0;endArrow=block;jumpStyle=arc;strokeWidth=${this.strokeWidth};endSize=2;endFill=1;rounded=0;verticalAlign=bottom;fontSize=${this.fontSize};labelBackgroundColor=none;`;
     // strokeColor=${strokeColor};
     let tuliStyle = [
@@ -2782,9 +2855,17 @@ class DisplayUtil {
         tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR_IMP};`,
         tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR};dashed=1;`,
       ],
+      [
+        tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR_FINISH};`,
+        tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR_INPROGRESS};`,
+      ],
+      [
+        tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR_IMP_FINISH};`,
+        tuliStyleStr + `strokeColor=${COLOROBJ.LINE_STROKECOLOR_IMP_INPROGRESS};`,
+      ],
 
     ]
-    let tuliMinx = maxX - jiangeNum * jiange - tuliLen * 2 - 30;
+    let tuliMinx = maxX - jiangeNum * jiange - tuliLen * tuliTitle.length - 30;
     let tuliLineLen = 200;
     this.addLineEdge([tuliMinx, maxY], [tuliMinx, maxY + bottomHei]); //左竖线
     tuliTitle.forEach((v: any, index: number) => {

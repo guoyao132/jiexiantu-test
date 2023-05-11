@@ -337,5 +337,5 @@ BidirectionalConnector=双向连接器
 DirectionalConnector=定向连接器
 ConnectionPoint=带吸附点连接线
 ConnectionVertical=带吸附点连接线垂直
-save=保存为接线图
+save=保存
 saveGraph=保存为组件

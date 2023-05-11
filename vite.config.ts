@@ -13,9 +13,14 @@ export default defineConfig(({mode}: ConfigEnv) => {
     base: './',
     server: {
       proxy: {
-        '/rtSingleArrowDiagram': 'http://172.18.8.243:9030',
-        '/xmlToPdf': 'http://172.18.8.243:9030',
-        '/scheduleGraph': 'http://172.18.8.243:9030'
+        '^/web/.*': {
+          target: 'http://172.18.8.243:8031/gdapi/',
+          changeOrigin: true,
+        },
+        '^/graph/.*': {
+          target: 'http://172.18.8.243:8031/gdapi/',
+          changeOrigin: true,
+        },
       }
 
     },
