@@ -24,4 +24,5 @@ declare interface Window{
   smEncrypt: any,
   jxt_config:any,
   mxEvent: any,
+  graphThemeColor: any,
 }

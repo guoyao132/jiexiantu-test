@@ -10,6 +10,14 @@ function Actions(editorUi) {
   this.init();
 };
 
+function sleepTime(time){
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(1)
+    }, time);
+  })
+}
+
 /**
  * Adds the default actions.
  */
@@ -17,6 +25,29 @@ Actions.prototype.init = function () {
   var ui = this.editorUi;
   var editor = ui.editor;
   var graph = editor.graph;
+
+  function getEditorUiSvg(){
+    const svgXml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + mxUtils.getXml(graph.getSvg(null, null, null, null, null,
+        null, null, null, null, null))
+    return svgXml;
+  }
+
+
+  async function showLightThemePreview(typeText) {
+    ui.$dialogObj['previewSave'].value = true;
+    let dom = document.getElementById('previewCon');
+    if(!dom){
+      await sleepTime(200);
+      dom = document.getElementById('previewCon');
+    }
+    let svgHtml = getEditorUiSvg();
+    dom.innerHTML = svgHtml;
+
+    let svgCon = dom.querySelector('svg') || dom;
+    new ui.$ZoomSvg(svgCon, dom)
+  }
+
   var isGraphEnabled = function () {
     return Action.prototype.isEnabled.apply(this, arguments) && graph.isEnabled();
   };
@@ -61,21 +92,11 @@ Actions.prototype.init = function () {
   // 	});
   // }).isEnabled = isGraphEnabled;
   this.addAction('save', function () {
-    let successSave = (data) => {
-      // if (data.status === 'SUCCEED') {
-      // 	mxUtils.alert('保存成功')
-      // } else {
-      // 	mxUtils.alert(data.errorMessage || '保存失败')
-      // }
-    }
-
     var encoder = new mxCodec();
     var node = encoder.encode(graph.getModel());
     var dlg = new FilenameDialog(ui, decodeURIComponent(''), 'save', mxUtils.bind(this, function (newValue) {
       if (newValue) {
-        const svgXml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
-          '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + mxUtils.getXml(graph.getSvg(null, null, null, null, null,
-            null, null, null, null, null))
+        const svgXml = getEditorUiSvg();
         ui.$api.saveScheduleGraph({
           masterPlanId: ui.$route.singleId,
           graphType: 1,
@@ -106,7 +127,9 @@ Actions.prototype.init = function () {
     dlg.init();
   });
   // this.addAction('pageSetup...', function() { ui.showDialog(new PageSetupDialog(ui).container, 320, 220, true, true); }).isEnabled = isGraphEnabled;
-  this.addAction('print...', function() { ui.showDialog(new PrintDialog(ui).container, 300, 180, true, true); }, null, 'sprite-print', Editor.ctrlKey + '+P');
+  this.addAction('print...', function () {
+    ui.showDialog(new PrintDialog(ui).container, 300, 180, true, true);
+  }, null, 'sprite-print', Editor.ctrlKey + '+P');
   this.addAction('preview', function () {
     mxUtils.show(graph, null, 10, 10);
   });

@@ -8646,7 +8646,7 @@ if (typeof mxVertexHandler != 'undefined')
 					}
 				};
 
-				imgExport.drawState(this.getView().getState(this.model.root), svgCanvas);
+				imgExport.drawState(this.getView().getState(this.model.root), svgCanvas, true);
 				this.updateSvgLinks(root, linkTarget, true);
 				this.addForeignObjectWarning(svgCanvas, root);
 

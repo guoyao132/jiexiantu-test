@@ -1,6 +1,5 @@
 <template>
   <!--  <router-view></router-view>-->
-
   <div class="main">
     <div class="main-con">
       <div class="svg-main" ref="svgMain"></div>

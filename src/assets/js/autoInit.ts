@@ -5,7 +5,8 @@ import {ElMessage, ElMessageBox} from 'element-plus'
 import 'element-plus/es/components/message-box/style/css'
 import tool from '../js/tool'
 import type {sendMsgData} from '../js/tool'
-import COLOROBJ from './color'
+const COLOROBJ = window.graphThemeColor;
+import ZoomSvg from "gy-zoom-svg";
 
 const MESSAGE_DURATION: number = 3000;
 const Line2Type: string[] = ['FS', 'SS'];
@@ -158,6 +159,8 @@ class DisplayUtil {
     this.editorUi.$route = query.query.value;
     this.editorUi.$ElMessageBox = ElMessageBox;
     this.editorUi.$displayUtil = displayUtil;
+    this.editorUi.$dialogObj = this.dialogObj;
+    this.editorUi.$ZoomSvg = ZoomSvg;
     if (!this.isTiaoshi) {
       this.addEvents();
     }
@@ -2346,9 +2349,6 @@ class DisplayUtil {
       }
       let cell:any;
       if(v.lineName){
-        // let s = `whiteSpace=wrap;text;html=1;align=right;verticalAlign=middle;resizable=0;labelPosition=left;spacingRight=20;strokeColor=#000;strokeWidth=${this.strokeWidth};`;
-        // let name = this.splitBrNameStr(v.lineName)
-        // this.graph.insertVertex(cell, null, v.lineName, 0, 0.5, 100, 0, s, true);
         if(v.lineName){
           x = x + 150;
         }
@@ -2658,7 +2658,7 @@ class DisplayUtil {
     let w = maxX - minX + 60;
     let h = maxY - minY + 60;
     let styleStr = `rotatable=0;strokeColor=none;movable=0;deletable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;labelBackgroundColor=none;fillColor=#073746;opacity=100;`;
-    let id = 'quyu-' + this.quyuList.length
+    let id = 'quyu-bg';
     let qy = this.graph.insertVertex(this.parentCell, id, null, minX - 30, minY - 30, w, h, styleStr)
     this.quyuList.push(id)
   }
@@ -3048,7 +3048,7 @@ class DisplayUtil {
   addFenqu(x: number, y: number, w: number, h: number, name?: string, color?:string) {
     let colorIndex = this.quyuList.length % 2
     color = color || COLOROBJ.FENQU_COLOR_LIST[colorIndex];
-    let styleStr = `strokeWidth=3;strokeColor=${COLOROBJ.BORDER_COLOR};movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;labelBackgroundColor=none;fillColor=${color};opacity=100;`;
+    let styleStr = `strokeWidth=3;strokeColor=${COLOROBJ.BORDER_COLOR};movable=0;deletable=0;resizable=0;connectable=0;rounded=0;whiteSpace=wrap;html=1;fontSize=25;fontColor=${COLOROBJ.FONTCOLOR}labelBackgroundColor=none;fillColor=${color};opacity=100;`;
     let id = 'quyu-' + this.quyuList.length
     let qy = this.graph.insertVertex(this.parentCell, id, null, x, y, w, h, styleStr)
     if(name){

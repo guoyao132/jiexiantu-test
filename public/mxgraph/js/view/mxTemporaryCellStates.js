@@ -4,14 +4,14 @@
  */
 /**
  * Class: mxTemporaryCellStates
- * 
+ *
  * Creates a temporary set of cell states.
  */
 function mxTemporaryCellStates(view, scale, cells, isCellVisibleFn, getLinkForCellState)
 {
 	scale = (scale != null) ? scale : 1;
 	this.view = view;
-	
+
 	// Stores the previous state
 	this.oldValidateCellState = view.validateCellState;
 	this.oldBounds = view.getGraphBounds();
@@ -27,24 +27,24 @@ function mxTemporaryCellStates(view, scale, cells, isCellVisibleFn, getLinkForCe
 		view.graph.cellRenderer.doRedrawShape = function(state)
 		{
 			var oldPaint = state.shape.paint;
-			
+
 			state.shape.paint = function(c)
 			{
 				var link = getLinkForCellState(state);
-				
+
 				if (link != null)
 				{
 					c.setLink(link);
 				}
-				
-				oldPaint.apply(this, arguments);
-				
+        oldPaint.apply(this, [...arguments, true]);
+				// oldPaint.apply(this, arguments);
+
 				if (link != null)
 				{
 					c.setLink(null);
 				}
 			};
-			
+
 			self.oldDoRedrawShape.apply(view.graph.cellRenderer, arguments);
 			state.shape.paint = oldPaint;
 		};
@@ -57,14 +57,14 @@ function mxTemporaryCellStates(view, scale, cells, isCellVisibleFn, getLinkForCe
 		{
 			return self.oldValidateCellState.apply(view, arguments);
 		}
-		
+
 		return null;
 	};
-	
+
 	// Creates space for new states
 	view.setStates(new mxDictionary());
 	view.setScale(scale);
-	
+
 	if (cells != null)
 	{
 		view.resetValidationState();
@@ -75,8 +75,7 @@ function mxTemporaryCellStates(view, scale, cells, isCellVisibleFn, getLinkForCe
 		for (var i = 0; i < cells.length; i++)
 		{
 			var bounds = view.getBoundingBox(view.validateCellState(view.validateCell(cells[i])));
-			
-			if (bbox == null)
+      if (bbox == null)
 			{
 				bbox = bounds;
 			}
@@ -120,7 +119,7 @@ mxTemporaryCellStates.prototype.oldScale = null;
 
 /**
  * Function: destroy
- * 
+ *
  * Returns the top, left corner as a new <mxPoint>.
  */
 mxTemporaryCellStates.prototype.destroy = function()

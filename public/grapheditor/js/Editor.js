@@ -1345,7 +1345,7 @@ PrintDialog.prototype.create = function(editorUi)
 			autoOrigin = true;
 		}
 
-		var preview = PrintDialog.createPrintPreview(graph, scale, pf, border, -100, -100, autoOrigin);
+		var preview = PrintDialog.createPrintPreview(graph, scale, pf, border, 0, 0, autoOrigin);
 		preview.open();
 		if (print)
 		{
@@ -1445,7 +1445,8 @@ PrintDialog.createPrintPreview = function(graph, scale, pf, border, x0, y0, auto
 	// {
 	// 	bg = '#ffffff';
 	// }
-	bg = '#073746';
+	// bg = '#073746';
+	bg = '#FFFFFF';
 
 	preview.backgroundColor = bg;
 
