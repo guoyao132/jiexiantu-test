@@ -936,96 +936,13 @@ mxShape.prototype.configureCanvas = function (c, x, y, w, h, isLight) {
   } else {
     let fillColor = this.fill;
     if (isLight && this.fill) {
-      fillColor = fillColor.toUpperCase();
-      if (id.includes('quyu-bg')) {
-        fillColor = 'none';
-      }else if (id.includes('point-')) {
-        switch (fillColor) {
-          case graphThemeColor.POINT_FILLCOLOR:
-            fillColor = graphThemeColor.POINT_FILLCOLOR_LIGHT;
-            break;
-          case graphThemeColor.POINT_FILLCOLOR_IMP:
-            fillColor = graphThemeColor.POINT_FILLCOLOR_IMP_LIGHT;
-            break;
-          case graphThemeColor.POINT_FILLCOLOR_FINISH:
-            fillColor = graphThemeColor.POINT_FILLCOLOR_FINISH_LIGHT;
-            break;
-          case graphThemeColor.POINT_FILLCOLOR_INPROGRESS:
-            fillColor = graphThemeColor.POINT_FILLCOLOR_INPROGRESS_LIGHT;
-            break;
-          case graphThemeColor.POINT_FILLCOLOR_IMP_FINISH:
-            fillColor = graphThemeColor.POINT_FILLCOLOR_IMP_FINISH_LIGHT;
-            break;
-          case graphThemeColor.POINT_FILLCOLOR_IMP_INPROGRESS:
-            fillColor = graphThemeColor.POINT_FILLCOLOR_IMP_INPROGRESS_LIGHT;
-            break;
-        }
-      }else if (id.includes('quyu-')) {
-        switch (fillColor) {
-          case graphThemeColor.FENQU_COLOR_LIST[0]:
-            fillColor = graphThemeColor.FENQU_COLOR_LIST_LIGHT[0];
-            break;
-          case graphThemeColor.FENQU_COLOR_LIST[1]:
-            fillColor = graphThemeColor.FENQU_COLOR_LIST_LIGHT[1];
-            break;
-        }
-      }
+      fillColor = graphThemeColor.defaultFillColorToLightColor(fillColor, id);
     }
     c.setFillColor(fillColor);
   }
   let strokeColor = this.stroke;
   if (isLight && strokeColor) {
-    strokeColor = strokeColor.toUpperCase();
-    if (id.includes('point-')) {
-      switch (strokeColor) {
-        case graphThemeColor.POINT_STROKECOLOR:
-          strokeColor = graphThemeColor.POINT_STROKECOLOR_LIGHT;
-          break;
-        case graphThemeColor.POINT_STROKECOLOR_IMP:
-          strokeColor = graphThemeColor.POINT_STROKECOLOR_IMP_LIGHT;
-          break;
-        case graphThemeColor.POINT_STROKECOLOR_FINISH:
-          strokeColor = graphThemeColor.POINT_STROKECOLOR_FINISH_LIGHT;
-          break;
-        case graphThemeColor.POINT_STROKECOLOR_INPROGRESS:
-          strokeColor = graphThemeColor.POINT_STROKECOLOR_INPROGRESS_LIGHT;
-          break;
-        case graphThemeColor.POINT_STROKECOLOR_IMP_FINISH:
-          strokeColor = graphThemeColor.POINT_STROKECOLOR_IMP_FINISH_LIGHT;
-          break;
-        case graphThemeColor.POINT_STROKECOLOR_IMP_INPROGRESS:
-          strokeColor = graphThemeColor.POINT_STROKECOLOR_IMP_INPROGRESS_LIGHT;
-          break;
-      }
-    }else if (id.includes('line-')) {
-      switch (strokeColor) {
-        case graphThemeColor.LINE_STROKECOLOR:
-          strokeColor = graphThemeColor.LINE_STROKECOLOR_LIGHT;
-          break;
-        case graphThemeColor.LINE_STROKECOLOR_IMP:
-          strokeColor = graphThemeColor.LINE_STROKECOLOR_IMP_LIGHT;
-          break;
-        case graphThemeColor.LINE_STROKECOLOR_FINISH:
-          strokeColor = graphThemeColor.LINE_STROKECOLOR_FINISH_LIGHT;
-          break;
-        case graphThemeColor.LINE_STROKECOLOR_INPROGRESS:
-          strokeColor = graphThemeColor.LINE_STROKECOLOR_INPROGRESS_LIGHT;
-          break;
-        case graphThemeColor.LINE_STROKECOLOR_IMP_FINISH:
-          strokeColor = graphThemeColor.LINE_STROKECOLOR_IMP_FINISH_LIGHT;
-          break;
-        case graphThemeColor.LINE_STROKECOLOR_IMP_INPROGRESS:
-          strokeColor = graphThemeColor.LINE_STROKECOLOR_IMP_INPROGRESS_LIGHT;
-          break;
-      }
-    }else if (id.includes('quyu-')) {
-    }else{
-      switch (strokeColor) {
-        case graphThemeColor.BORDER_COLOR:
-          strokeColor = graphThemeColor.BORDER_COLOR_LIGHT;
-          break;
-      }
-    }
+    strokeColor = graphThemeColor.defaultStrokeColorToLightColor(strokeColor, id);
   }
   c.setStrokeColor(strokeColor);
 };

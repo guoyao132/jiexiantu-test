@@ -74,8 +74,9 @@ function mxTemporaryCellStates(view, scale, cells, isCellVisibleFn, getLinkForCe
 		// the model so that the original cells are not modified
 		for (var i = 0; i < cells.length; i++)
 		{
-			var bounds = view.getBoundingBox(view.validateCellState(view.validateCell(cells[i])));
-      if (bbox == null)
+			var state = view.validateCellState(view.validateCell(cells[i]), true, true);
+			var bounds = view.getBoundingBox(state);
+			if (bbox == null)
 			{
 				bbox = bounds;
 			}

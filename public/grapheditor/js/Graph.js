@@ -5858,7 +5858,7 @@ TableLayout.prototype.execute = function(parent)
 	    		{
 	    			if (window.console != null)
 	    			{
-	    				console.log('Error in shape: ' + e);
+	    				console.error('Error in shape: ' + e);
 	    			}
 	    		}
 	    	}
@@ -5940,7 +5940,7 @@ mxStencilRegistry.getStencil = function(name)
 							{
 								if (window.console != null)
 								{
-									console.log('error in getStencil:', fname, e);
+									console.error('error in getStencil:', fname, e);
 								}
 							}
 						}
@@ -6035,7 +6035,7 @@ mxStencilRegistry.loadStencilSet = function(stencilFile, postStencilLoad, force,
 			{
 				if (window.console != null)
 				{
-					console.log('error in loadStencilSet:', stencilFile, e);
+					console.error('error in loadStencilSet:', stencilFile, e);
 				}
 			}
 		}

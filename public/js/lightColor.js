@@ -68,4 +68,127 @@ window.graphThemeColor = {
   BORDER_COLOR_LIGHT: '#999999',
 
 
+  defaultFontColorToLightColor(fontColor, cellId){
+    fontColor = fontColor.toUpperCase();
+    if (cellId.includes('point-')) {
+      switch (fontColor) {
+        case this.POINT_FONTCOLOR:
+          fontColor = this.POINT_FONTCOLOR_LIGHT;
+          break;
+        case this.POINT_FONTCOLOR_IMP:
+          fontColor = this.POINT_FONTCOLOR_IMP_LIGHT;
+          break;
+        case this.POINT_FONTCOLOR_FINISH:
+          fontColor = this.POINT_FONTCOLOR_FINISH_LIGHT;
+          break;
+        case this.POINT_FONTCOLOR_INPROGRESS:
+          fontColor = this.POINT_FONTCOLOR_INPROGRESS_LIGHT;
+          break;
+        case this.POINT_FONTCOLOR_IMP_FINISH:
+          fontColor = this.POINT_FONTCOLOR_IMP_FINISH_LIGHT;
+          break;
+        case this.POINT_FONTCOLOR_IMP_INPROGRESS:
+          fontColor = this.POINT_FONTCOLOR_IMP_INPROGRESS_LIGHT;
+          break;
+      }
+    }else {
+      switch (fontColor) {
+        case this.FONTCOLOR:
+          fontColor = this.FONTCOLOR_LIGHT;
+          break;
+      }
+    }
+    return fontColor;
+  },
+  defaultFillColorToLightColor(fillColor, cellId){
+    fillColor = fillColor.toUpperCase();
+    if (cellId.includes('quyu-bg')) {
+      fillColor = 'none';
+    }else if (cellId.includes('point-')) {
+      switch (fillColor) {
+        case this.POINT_FILLCOLOR:
+          fillColor = this.POINT_FILLCOLOR_LIGHT;
+          break;
+        case this.POINT_FILLCOLOR_IMP:
+          fillColor = this.POINT_FILLCOLOR_IMP_LIGHT;
+          break;
+        case this.POINT_FILLCOLOR_FINISH:
+          fillColor = this.POINT_FILLCOLOR_FINISH_LIGHT;
+          break;
+        case this.POINT_FILLCOLOR_INPROGRESS:
+          fillColor = this.POINT_FILLCOLOR_INPROGRESS_LIGHT;
+          break;
+        case this.POINT_FILLCOLOR_IMP_FINISH:
+          fillColor = this.POINT_FILLCOLOR_IMP_FINISH_LIGHT;
+          break;
+        case this.POINT_FILLCOLOR_IMP_INPROGRESS:
+          fillColor = this.POINT_FILLCOLOR_IMP_INPROGRESS_LIGHT;
+          break;
+      }
+    }else if (cellId.includes('quyu-')) {
+      switch (fillColor) {
+        case this.FENQU_COLOR_LIST[0]:
+          fillColor = this.FENQU_COLOR_LIST_LIGHT[0];
+          break;
+        case this.FENQU_COLOR_LIST[1]:
+          fillColor = this.FENQU_COLOR_LIST_LIGHT[1];
+          break;
+      }
+    }
+    return fillColor;
+  },
+  defaultStrokeColorToLightColor(strokeColor, cellId){
+    strokeColor = strokeColor.toUpperCase();
+    if (cellId.includes('point-')) {
+      switch (strokeColor) {
+        case this.POINT_STROKECOLOR:
+          strokeColor = this.POINT_STROKECOLOR_LIGHT;
+          break;
+        case this.POINT_STROKECOLOR_IMP:
+          strokeColor = this.POINT_STROKECOLOR_IMP_LIGHT;
+          break;
+        case this.POINT_STROKECOLOR_FINISH:
+          strokeColor = this.POINT_STROKECOLOR_FINISH_LIGHT;
+          break;
+        case this.POINT_STROKECOLOR_INPROGRESS:
+          strokeColor = this.POINT_STROKECOLOR_INPROGRESS_LIGHT;
+          break;
+        case this.POINT_STROKECOLOR_IMP_FINISH:
+          strokeColor = this.POINT_STROKECOLOR_IMP_FINISH_LIGHT;
+          break;
+        case this.POINT_STROKECOLOR_IMP_INPROGRESS:
+          strokeColor = this.POINT_STROKECOLOR_IMP_INPROGRESS_LIGHT;
+          break;
+      }
+    }else if (cellId.includes('line-')) {
+      switch (strokeColor) {
+        case this.LINE_STROKECOLOR:
+          strokeColor = this.LINE_STROKECOLOR_LIGHT;
+          break;
+        case this.LINE_STROKECOLOR_IMP:
+          strokeColor = this.LINE_STROKECOLOR_IMP_LIGHT;
+          break;
+        case this.LINE_STROKECOLOR_FINISH:
+          strokeColor = this.LINE_STROKECOLOR_FINISH_LIGHT;
+          break;
+        case this.LINE_STROKECOLOR_INPROGRESS:
+          strokeColor = this.LINE_STROKECOLOR_INPROGRESS_LIGHT;
+          break;
+        case this.LINE_STROKECOLOR_IMP_FINISH:
+          strokeColor = this.LINE_STROKECOLOR_IMP_FINISH_LIGHT;
+          break;
+        case this.LINE_STROKECOLOR_IMP_INPROGRESS:
+          strokeColor = this.LINE_STROKECOLOR_IMP_INPROGRESS_LIGHT;
+          break;
+      }
+    }else if (cellId.includes('quyu-')) {
+    }else{
+      switch (strokeColor) {
+        case this.BORDER_COLOR:
+          strokeColor = this.BORDER_COLOR_LIGHT;
+          break;
+      }
+    }
+    return strokeColor;
+  },
 }

@@ -681,39 +681,10 @@ mxText.prototype.configureCanvas = function(c, x, y, w, h, isLight)
 {
 	mxShape.prototype.configureCanvas.apply(this, arguments);
 
-
-	let fontColor = this.color.toUpperCase();
+	let fontColor = this.color;
 	if(isLight){
 		let id = this.state?.cell?.id || '';
-		if (id.includes('point-')) {
-
-			switch (fontColor) {
-				case graphThemeColor.POINT_FONTCOLOR:
-					fontColor = graphThemeColor.POINT_FONTCOLOR_LIGHT;
-					break;
-				case graphThemeColor.POINT_FONTCOLOR_IMP:
-					fontColor = graphThemeColor.POINT_FONTCOLOR_IMP_LIGHT;
-					break;
-				case graphThemeColor.POINT_FONTCOLOR_FINISH:
-					fontColor = graphThemeColor.POINT_FONTCOLOR_FINISH_LIGHT;
-					break;
-				case graphThemeColor.POINT_FONTCOLOR_INPROGRESS:
-					fontColor = graphThemeColor.POINT_FONTCOLOR_INPROGRESS_LIGHT;
-					break;
-				case graphThemeColor.POINT_FONTCOLOR_IMP_FINISH:
-					fontColor = graphThemeColor.POINT_FONTCOLOR_IMP_FINISH_LIGHT;
-					break;
-				case graphThemeColor.POINT_FONTCOLOR_IMP_INPROGRESS:
-					fontColor = graphThemeColor.POINT_FONTCOLOR_IMP_INPROGRESS_LIGHT;
-					break;
-			}
-		}else {
-			switch (fontColor) {
-				case graphThemeColor.FONTCOLOR:
-					fontColor = graphThemeColor.FONTCOLOR_LIGHT;
-					break;
-			}
-		}
+		fontColor = graphThemeColor.defaultFontColorToLightColor(fontColor, id);
 	}
 	c.setFontColor(fontColor);
 	c.setFontBackgroundColor(this.background);
