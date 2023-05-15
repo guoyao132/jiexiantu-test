@@ -1,4 +1,5 @@
 <template>
+  <img class="fullscreen-btn" @click.stop="fullScreenFun" src="./assets/image/fullscreen-btn.png" />
   <!--  <router-view></router-view>-->
   <el-config-provider :locale="zhCn" :zIndex="100000">
     <el-dialog
@@ -189,6 +190,48 @@ watch(dialogPreviewCon, (v) => {
     previewConRef.value?.appendChild(dom);
   }
 })
+
+let isFull:boolean   = false;
+const fullScreenFun = () => {
+  if(!isFull) {
+    isFull = true;
+    if(document.documentElement.RequestFullScreen){
+      document.documentElement.RequestFullScreen();
+    }
+    //兼容火狐
+    console.log(document.documentElement.mozRequestFullScreen)
+    if(document.documentElement.mozRequestFullScreen){
+      document.documentElement.mozRequestFullScreen();
+    }
+    //兼容谷歌等可以webkitRequestFullScreen也可以webkitRequestFullscreen
+    if(document.documentElement.webkitRequestFullScreen){
+      document.documentElement.webkitRequestFullScreen();
+    }
+    //兼容IE,只能写msRequestFullscreen
+    if(document.documentElement.msRequestFullscreen){
+      document.documentElement.msRequestFullscreen();
+    }
+  }else {
+    isFull = false;
+    if(document.exitFullScreen){
+      document.exitFullscreen()
+    }
+    //兼容火狐
+    console.log(document.mozExitFullScreen)
+    if(document.mozCancelFullScreen){
+      document.mozCancelFullScreen()
+    }
+    //兼容谷歌等
+    if(document.webkitExitFullscreen){
+      document.webkitExitFullscreen()
+    }
+    //兼容IE
+    if(document.msExitFullscreen){
+      document.msExitFullscreen()
+    }
+  }
+
+}
 </script>
 
 
@@ -197,5 +240,16 @@ watch(dialogPreviewCon, (v) => {
   > div {
     display: none;
   }
+}
+
+.fullscreen-btn{
+  width: 20px;
+  height: 20px;
+  background: url(./assets/image/fullscreen-btn.png) no-repeat;
+  position: fixed;
+  right: 15px;
+  top: 5px;
+  z-index: 200000;
+  cursor: pointer;
 }
 </style>
