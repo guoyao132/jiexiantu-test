@@ -192,42 +192,49 @@ watch(dialogPreviewCon, (v) => {
 })
 
 let isFull:boolean   = false;
+
+interface FsDocument extends Document {
+  webkitExitFullscreen?: () => void;
+  msExitFullscreen?: () => void;
+  mozCancelFullScreen?: () => void;
+}
 const fullScreenFun = () => {
   if(!isFull) {
     isFull = true;
-    if(document.documentElement.RequestFullScreen){
-      document.documentElement.RequestFullScreen();
+    let docElm:any = document.documentElement;
+    if(docElm.RequestFullScreen){
+      docElm.RequestFullScreen();
     }
     //兼容火狐
-    console.log(document.documentElement.mozRequestFullScreen)
-    if(document.documentElement.mozRequestFullScreen){
-      document.documentElement.mozRequestFullScreen();
+    console.log(docElm.mozRequestFullScreen)
+    if(docElm.mozRequestFullScreen){
+      docElm.mozRequestFullScreen();
     }
     //兼容谷歌等可以webkitRequestFullScreen也可以webkitRequestFullscreen
-    if(document.documentElement.webkitRequestFullScreen){
-      document.documentElement.webkitRequestFullScreen();
+    if(docElm.webkitRequestFullScreen){
+      docElm.webkitRequestFullScreen();
     }
     //兼容IE,只能写msRequestFullscreen
-    if(document.documentElement.msRequestFullscreen){
-      document.documentElement.msRequestFullscreen();
+    if(docElm.msRequestFullscreen){
+      docElm.msRequestFullscreen();
     }
   }else {
     isFull = false;
-    if(document.exitFullScreen){
-      document.exitFullscreen()
+    let doc = document as FsDocument;
+    if(doc.exitFullscreen){
+      doc.exitFullscreen()
     }
     //兼容火狐
-    console.log(document.mozExitFullScreen)
-    if(document.mozCancelFullScreen){
-      document.mozCancelFullScreen()
+    if(doc.mozCancelFullScreen){
+      doc.mozCancelFullScreen()
     }
     //兼容谷歌等
-    if(document.webkitExitFullscreen){
-      document.webkitExitFullscreen()
+    if(doc.webkitExitFullscreen){
+      doc.webkitExitFullscreen()
     }
     //兼容IE
-    if(document.msExitFullscreen){
-      document.msExitFullscreen()
+    if(doc.msExitFullscreen){
+      doc.msExitFullscreen()
     }
   }
 
