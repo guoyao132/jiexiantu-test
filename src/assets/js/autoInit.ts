@@ -88,6 +88,7 @@ class DisplayUtil {
   linePointArr: any; // 将线当成点的数组
   isTiaoshi: boolean;
   isDelete: boolean;
+  isGetData: boolean;
 
   constructor() {
     this.isTiaoshi = import.meta.env.MODE === "development";
@@ -138,6 +139,7 @@ class DisplayUtil {
     this.noFenquPointArr = [];
     this.splitParentIds = [];
     this.linePointArr = [];
+    this.isGetData = false;
   }
 
   init(query: any) {
@@ -196,6 +198,7 @@ class DisplayUtil {
     getDiagramList({
       masterPlanId: singleId,
     }).then((resp: any) => {
+      this.isGetData = false;
       let result = resp.result || {};
       let diagramList = result.diagramList;
       diagramList.forEach((v: any) => {
@@ -2985,6 +2988,7 @@ class DisplayUtil {
       this.destroyEvents();
       this.graphModel.clear()
       this.isInit = false;
+      this.isGetData = false;
       this.parentCell = null;
       this.linesArr = [];
       this.dataCellObj = {};
@@ -3006,7 +3010,11 @@ class DisplayUtil {
   }
 
   updateOnLineXml() {
+    if(this.isGetData){
+      return;
+    }
     this.clearGraphModel();
+    this.isGetData = true;
     this.getOnlineData(this.singleId);
   }
 

@@ -147,9 +147,10 @@ watch(dialogVisible, (v) => {
     formCon.value?.resetFields()
   }
 })
+let isSubmiting = true;
 const submit = () => {
   formCon.value?.validate((isSub) => {
-    if (isSub) {
+    if (isSub && isSubmiting) {
       let eObj: any = null;
       displayUtil.resultDate.forEach((v: any) => {
         let serialNumber = v.serialNumber;
@@ -159,6 +160,7 @@ const submit = () => {
         }
       })
       if (eObj) {
+        isSubmiting = false;
         // planLevel 层级为上一条数据的层级
         // splitParentId  父节点序号为上一条数据的父节点
         addDiagram({
@@ -166,14 +168,17 @@ const submit = () => {
           planLevel: eObj.planLevel,
           splitParentId: eObj.splitParentId,
           serialNumber: Number(eObj.serialNumber) + 1 + '',
-          singleId: displayUtil.singleId
+          masterPlanId: displayUtil.singleId
         }).then(() => {
+          isSubmiting = true;
           displayUtil.updateOnLineXml();
           dialogVisible.value = false;
           displayUtil.sendMsg({
             type: 'update',
             updateTypa: 'duration',
           });
+        }).catch(() => {
+
         })
       }
     }
