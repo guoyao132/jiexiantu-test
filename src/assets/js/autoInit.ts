@@ -2985,7 +2985,7 @@ class DisplayUtil {
 
   clearGraphModel() {
     if (this.isInit) {
-      this.destroyEvents();
+      // this.destroyEvents();
       this.graphModel.clear()
       this.isInit = false;
       this.isGetData = false;

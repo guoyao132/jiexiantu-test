@@ -94,7 +94,7 @@ Actions.prototype.init = function () {
   this.addAction('save', function () {
     var encoder = new mxCodec();
     var node = encoder.encode(graph.getModel());
-    var dlg = new FilenameDialog(ui, decodeURIComponent(''), 'save', mxUtils.bind(this, function (newValue) {
+    var dlg = new FilenameDialog(ui, decodeURIComponent(''), '保存', mxUtils.bind(this, function (newValue) {
       if (newValue) {
         const svgXml = getEditorUiSvg();
         ui.$api.saveScheduleGraph({

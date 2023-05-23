@@ -31,7 +31,7 @@ Menus.prototype.defaultFontSize = '12';
  * Sets the default font size.
  */
 // Menus.prototype.defaultMenuItems = ['file', 'edit', 'view', 'arrange', 'extras'];
-Menus.prototype.defaultMenuItems = ['file','edit'];
+Menus.prototype.defaultMenuItems = ['file','edit', 'save'];
 
 /**
  * Adds the label menu items to the given menu and parent.
@@ -484,13 +484,20 @@ Menus.prototype.init = function()
 	})));
 	this.put('file', new Menu(mxUtils.bind(this, function(menu, parent)
 	{
-		this.addMenuItems(menu, ['save','-', 'editDiagram', '-', 'print','export'], parent);
+		this.addMenuItems(menu, ['editDiagram', '-', 'print','export'], parent);
 	})));
 	this.put('edit', new Menu(mxUtils.bind(this, function(menu, parent)
 	{
-		this.addMenuItems(menu, ['undo', 'redo', '-', 'cut', 'copy', 'paste', 'delete', '-', 'duplicate', '-',
-			'editData', 'editTooltip', '-', 'editStyle', '-', 'edit', '-', 'editLink', 'openLink', '-',
-			'selectVertices', 'selectEdges', 'selectAll', 'selectNone', '-', 'lockUnlock']);
+		this.addMenuItems(menu, ['undo', 'redo', '-', 'cut', 'copy', 'paste', 'delete', '-',
+			'editData', '-', 'editStyle', '-',
+			'selectVertices', 'selectEdges', 'selectAll', 'selectNone']);
+		// this.addMenuItems(menu, ['undo', 'redo', '-', 'cut', 'copy', 'paste', 'delete', '-', 'duplicate', '-',
+		// 	'editData', 'editTooltip', '-', 'editStyle', '-', 'edit', '-', 'editLink', 'openLink', '-',
+		// 	'selectVertices', 'selectEdges', 'selectAll', 'selectNone', '-', 'lockUnlock']);
+	})));
+	this.put('save', new Menu(mxUtils.bind(this, function(){
+		var action = this.editorUi.actions.get('save');
+		action.funct();
 	})));
 	this.put('extras', new Menu(mxUtils.bind(this, function(menu, parent)
 	{
@@ -1141,7 +1148,7 @@ Menus.prototype.addPopupMenuStyleItems = function(menu, cell, evt)
 {
 	if (this.editorUi.editor.graph.getSelectionCount() == 1)
 	{
-		this.addMenuItems(menu, ['-', 'setAsDefaultStyle'], null, evt);
+		// this.addMenuItems(menu, ['-', 'setAsDefaultStyle'], null, evt);
 	}
 	else if (this.editorUi.editor.graph.isSelectionEmpty())
 	{
@@ -1206,8 +1213,8 @@ Menus.prototype.addPopupMenuCellItems = function(menu, cell, evt)
 			}
 
 			menu.addSeparator();
-			this.addMenuItem(menu, 'turn', null, evt, null, mxResources.get('reverse'));
-			this.addMenuItems(menu, [(isWaypoint) ? 'removeWaypoint' : 'addWaypoint'], null, evt);
+			// this.addMenuItem(menu, 'turn', null, evt, null, mxResources.get('reverse'));
+			// this.addMenuItems(menu, [(isWaypoint) ? 'removeWaypoint' : 'addWaypoint'], null, evt);
 
 			// Adds reset waypoints option if waypoints exist
 			var geo = graph.getModel().getGeometry(cell);
@@ -1217,12 +1224,12 @@ Menus.prototype.addPopupMenuCellItems = function(menu, cell, evt)
 		if (graph.getSelectionCount() == 1 && (hasWaypoints || (graph.getModel().isVertex(cell) &&
 			graph.getModel().getEdgeCount(cell) > 0)))
 		{
-			this.addMenuItems(menu, ['-', 'clearWaypoints'], null, evt);
+			// this.addMenuItems(menu, ['-', 'clearWaypoints'], null, evt);
 		}
 
 		if (graph.getSelectionCount() == 1)
 		{
-			this.addMenuItems(menu, ['-', 'editStyle', 'editData', 'editLink'], null, evt);
+			// this.addMenuItems(menu, ['-', 'editStyle', 'editData', 'editLink'], null, evt);
 
 			// Shows edit image action if there is an image in the style
 			if (graph.getModel().isVertex(cell) && mxUtils.getValue(state.style, mxConstants.STYLE_IMAGE, null) != null)
@@ -1330,7 +1337,7 @@ Menubar.prototype.addMenu = function(label, funct, before)
 	var elt = document.createElement('a');
 	elt.className = 'geItem';
 	mxUtils.write(elt, label);
-	this.addMenuHandler(elt, funct);
+	this.addMenuHandler(elt, funct, label);
 
     if (before != null)
     {
@@ -1347,7 +1354,7 @@ Menubar.prototype.addMenu = function(label, funct, before)
 /**
  * Adds a handler for showing a menu in the given element.
  */
-Menubar.prototype.addMenuHandler = function(elt, funct)
+Menubar.prototype.addMenuHandler = function(elt, funct, label)
 {
 	if (funct != null)
 	{
@@ -1379,16 +1386,17 @@ Menubar.prototype.addMenuHandler = function(elt, funct)
 
 			mxEvent.consume(evt);
 		});
-
-		// Shows menu automatically while in expanded state
-		mxEvent.addListener(elt, 'mousemove', mxUtils.bind(this, function(evt)
-		{
-			if (this.editorUi.currentMenu != null && this.editorUi.currentMenuElt != elt)
+		if(label !== '保存'){
+			// Shows menu automatically while in expanded state
+			mxEvent.addListener(elt, 'mousemove', mxUtils.bind(this, function(evt)
 			{
-				this.editorUi.hideCurrentMenu();
-				clickHandler(evt);
-			}
-		}));
+				if (this.editorUi.currentMenu != null && this.editorUi.currentMenuElt != elt)
+				{
+					this.editorUi.hideCurrentMenu();
+					clickHandler(evt);
+				}
+			}));
+		}
 
 		// Hides menu if already showing and prevents focus
         mxEvent.addListener(elt, (mxClient.IS_POINTER) ? 'pointerdown' : 'mousedown',
