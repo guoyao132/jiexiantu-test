@@ -89,6 +89,7 @@ class DisplayUtil {
   isTiaoshi: boolean;
   isDelete: boolean;
   isGetData: boolean;
+  noSaveData: boolean;
 
   constructor() {
     this.isTiaoshi = import.meta.env.MODE === "development";
@@ -140,6 +141,7 @@ class DisplayUtil {
     this.splitParentIds = [];
     this.linePointArr = [];
     this.isGetData = false;
+    this.noSaveData = true;
   }
 
   init(query: any) {
@@ -182,6 +184,7 @@ class DisplayUtil {
       let result = resp.result || {};
       let moduleXml = result.moduleXml;
       if (!this.isTiaoshi && moduleXml) {
+        this.noSaveData = false;
         //更新线
         let data = window.Graph.zapGremlins(moduleXml)
         this.graphModel.beginUpdate()
@@ -723,6 +726,12 @@ class DisplayUtil {
     this.graph.orderCells(true, this.quyuList.map((quyuId: string) => this.graphModel.getCell(quyuId)));
     this.graphModel.endUpdate()
     this.graph.fit(10, false, 0, true, false, false);
+    if(this.noSaveData){
+      this.noSaveData = false;
+      let action = this.editorUi.actions.get('saveFun');
+      action.funct();
+    }
+
   }
 
   //添加线所谓点位的线

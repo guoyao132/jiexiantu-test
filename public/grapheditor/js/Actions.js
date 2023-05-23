@@ -115,6 +115,19 @@ Actions.prototype.init = function () {
     ui.showDialog(dlg.container, 300, 100, true, true);
     dlg.init();
   }, null, null, Editor.ctrlKey + '+S').isEnabled = isGraphEnabled;
+
+  this.addAction('saveFun', function () {
+    const svgXml = getEditorUiSvg();
+    var encoder = new mxCodec();
+    var node = encoder.encode(graph.getModel());
+    ui.$api.saveScheduleGraph({
+      masterPlanId: ui.$route.singleId,
+      graphType: 1,
+      moduleName: 'autosave',
+      moduleXml: mxUtils.getPrettyXml(node),
+      svgXml: svgXml,
+    })
+  }, null, null, null);
   // this.addAction('saveGraph...', function () {
   //   ui.saveFile(true);
   // }, null, null, Editor.ctrlKey + '+Shift+S').isEnabled = isGraphEnabled;
