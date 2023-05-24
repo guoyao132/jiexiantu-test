@@ -75,6 +75,7 @@ class DisplayUtil {
   isInit: boolean;  //是否初始化
   route: any;  //路由
   singleId: string;
+  query: any;
   graphEventList: any;
   graphModelEventList: any;
   dialogObj: any;
@@ -142,6 +143,7 @@ class DisplayUtil {
     this.linePointArr = [];
     this.isGetData = false;
     this.noSaveData = true;
+    this.query = {};
   }
 
   init(query: any) {
@@ -169,6 +171,7 @@ class DisplayUtil {
       this.addEvents();
     }
     this.parentCell = this.graph.getDefaultParent();
+    this.query = query;
     if (query.singleId) {
       this.getData(query.singleId);
     } else {
@@ -199,6 +202,7 @@ class DisplayUtil {
 
   getOnlineData(singleId: string) {
     getDiagramList({
+      month: this.query.month,
       masterPlanId: singleId,
     }).then((resp: any) => {
       this.isGetData = false;

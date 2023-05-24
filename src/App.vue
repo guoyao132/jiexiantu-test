@@ -96,6 +96,7 @@ const init = async () => {
   if (v.data || v.singleId) {
     displayUtil.init({
       data: v.data,
+      month: v.month,
       singleId: v.singleId,
       query,
     });
