@@ -2692,7 +2692,7 @@ class DisplayUtil {
     let allLen = this.getDateDaySub(this.startDate, this.endDate)
     let needNum = this.needAddSubDateNum(this.endDate);
     let maxX = (this.dateSubLength) * (allLen / this.dateMinSub + needNum + 2) + this.mainPadding + this.pointSize;
-    maxX = Math.max(maxX, 3030)
+    maxX = Math.max(maxX, 4030)
     this.leftTopPoint = [minX, minY];
     this.leftBottomPoint = [minX, maxY];
     this.rightTopPoint = [maxX, minY];
