@@ -189,14 +189,14 @@ class DisplayUtil {
       if (!this.isTiaoshi && moduleXml) {
         this.noSaveData = false;
         //更新线
-        let data = window.Graph.zapGremlins(moduleXml)
-        this.graphModel.beginUpdate()
-        this.editorUi.editor.setGraphXml(window.mxUtils.parseXml(data).documentElement);
-        this.graphModel.endUpdate()
-        this.graph.fit(10, false, 0, true, false, false);
-      } else {
-        this.getOnlineData(singleId);
+        // let data = window.Graph.zapGremlins(moduleXml)
+        // this.graphModel.beginUpdate()
+        // this.editorUi.editor.setGraphXml(window.mxUtils.parseXml(data).documentElement);
+        // this.graphModel.endUpdate()
+        // this.graph.fit(10, false, 0, true, false, false);
       }
+
+      this.getOnlineData(singleId);
     })
   }
 
